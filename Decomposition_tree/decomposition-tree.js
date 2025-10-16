@@ -31,20 +31,27 @@ let svg, g, tree, zoom;
  */
 document.addEventListener('DOMContentLoaded', function() {
     tableau.extensions.initializeAsync({ configure: configure }).then(() => {
-        console.log('Tableau extension initialized');
+        console.log('Tableau viz extension initialized');
         updateStatus('Extension loaded successfully');
 
-        // Get the worksheet
-        const worksheets = tableau.extensions.dashboardContent.dashboard.worksheets;
-
-        if (worksheets.length === 0) {
-            updateStatus('Error: No worksheet found');
+        // Get the worksheet - for viz extensions, use worksheetContent
+        if (tableau.extensions.worksheetContent) {
+            // Viz extension (worksheet extension)
+            worksheet = tableau.extensions.worksheetContent.worksheet;
+            console.log('Using viz extension worksheet:', worksheet.name);
+        } else if (tableau.extensions.dashboardContent) {
+            // Dashboard extension (fallback for compatibility)
+            const worksheets = tableau.extensions.dashboardContent.dashboard.worksheets;
+            if (worksheets.length === 0) {
+                updateStatus('Error: No worksheet found');
+                return;
+            }
+            worksheet = worksheets[0];
+            console.log('Using dashboard worksheet:', worksheet.name);
+        } else {
+            updateStatus('Error: No worksheet context found');
             return;
         }
-
-        // Use first worksheet
-        worksheet = worksheets[0];
-        console.log('Using worksheet:', worksheet.name);
 
         // Initialize the extension
         initializeExtension();
@@ -65,42 +72,101 @@ async function initializeExtension() {
         // Load settings
         loadSettings();
 
-        // Get underlying data (all raw rows) - this is what we'll aggregate
-        const underlyingData = await worksheet.getUnderlyingDataAsync();
-        console.log('Underlying data loaded:', underlyingData.totalRowCount, 'rows');
+        // For viz extensions, we need to try different data access methods
+        let dataTable = null;
+        let dataMethod = '';
+
+        try {
+            // Try getting underlying data first (most complete)
+            console.log('Attempting to get underlying data...');
+            dataTable = await worksheet.getUnderlyingDataAsync();
+            dataMethod = 'underlying';
+            console.log('Underlying data loaded:', dataTable.totalRowCount, 'rows');
+        } catch (error) {
+            console.warn('Could not get underlying data:', error);
+
+            try {
+                // Fallback to summary data
+                console.log('Attempting to get summary data...');
+                dataTable = await worksheet.getSummaryDataAsync();
+                dataMethod = 'summary';
+                console.log('Summary data loaded:', dataTable.totalRowCount, 'rows');
+            } catch (summaryError) {
+                console.error('Could not get summary data either:', summaryError);
+                updateStatus('Error: Cannot access worksheet data. Please ensure data is present in the worksheet.');
+                return;
+            }
+        }
 
         // Extract measures and dimensions from columns
-        const columns = underlyingData.columns;
+        const columns = dataTable.columns;
+        console.log('Total columns found:', columns.length);
+        console.log('Column details:', columns.map(c => ({
+            name: c.fieldName,
+            type: c.dataType,
+            isReferenced: c.isReferenced,
+            index: c.index
+        })));
 
-        // Identify measures (numeric types) and dimensions (string/date types)
-        measures = columns.filter(col =>
-            col.dataType === 'float' ||
-            col.dataType === 'int' ||
-            col.fieldName.toLowerCase().includes('sum') ||
-            col.fieldName.toLowerCase().includes('avg') ||
-            col.fieldName.toLowerCase().includes('count')
+        // Identify measures (numeric types) - be more lenient with filtering
+        // For viz extensions, isReferenced might not work as expected, so we'll try multiple approaches
+        let candidateMeasures = columns.filter(col =>
+            col.dataType === 'float' || col.dataType === 'int'
         );
 
-        dimensions = columns.filter(col =>
+        console.log('Candidate measures (by type):', candidateMeasures.map(m => m.fieldName));
+
+        // If we have isReferenced info, prefer those columns
+        const referencedMeasures = candidateMeasures.filter(col => col.isReferenced === true);
+        if (referencedMeasures.length > 0) {
+            measures = referencedMeasures;
+            console.log('Using referenced measures:', measures.map(m => m.fieldName));
+        } else {
+            // Fallback: use all numeric columns
+            measures = candidateMeasures;
+            console.log('Using all numeric columns as measures (no isReferenced info)');
+        }
+
+        // Identify dimensions (string/date types) - same lenient approach
+        let candidateDimensions = columns.filter(col =>
             col.dataType === 'string' ||
             col.dataType === 'date' ||
-            col.dataType === 'date-time'
+            col.dataType === 'date-time' ||
+            col.dataType === 'datetime'
         );
+
+        console.log('Candidate dimensions (by type):', candidateDimensions.map(d => d.fieldName));
+
+        const referencedDimensions = candidateDimensions.filter(col => col.isReferenced === true);
+        if (referencedDimensions.length > 0) {
+            dimensions = referencedDimensions;
+            console.log('Using referenced dimensions:', dimensions.map(d => d.fieldName));
+        } else {
+            // Fallback: use all string/date columns
+            dimensions = candidateDimensions;
+            console.log('Using all string/date columns as dimensions (no isReferenced info)');
+        }
 
         console.log('Measures found:', measures.map(m => m.fieldName));
         console.log('Dimensions found:', dimensions.map(d => d.fieldName));
 
         if (measures.length === 0) {
-            updateStatus('Error: No numeric measures found in data');
+            updateStatus('No measures found. Please add a measure to your worksheet (e.g., drag Sales to Rows or Columns).');
+            console.warn('No measures detected. Available columns:', columns.map(c => c.fieldName));
             return;
         }
 
         if (dimensions.length === 0) {
-            updateStatus('Warning: No dimensions found for drill-down');
+            updateStatus('Warning: No dimensions found for drill-down. Add dimensions to enable exploration.');
+            console.warn('No dimensions detected. Available columns:', columns.map(c => c.fieldName));
         }
 
-        // Store underlying data globally for aggregations
-        window.underlyingData = underlyingData;
+        // Store data globally for aggregations
+        window.underlyingData = dataTable;
+        window.dataAccessMethod = dataMethod;
+
+        console.log(`Data access method: ${dataMethod}`);
+        console.log(`Found ${measures.length} measures and ${dimensions.length} dimensions`);
 
         // Populate measure selector
         populateMeasureSelector();
@@ -115,6 +181,7 @@ async function initializeExtension() {
 
     } catch (error) {
         console.error('Error initializing:', error);
+        console.error('Error stack:', error.stack);
         updateStatus('Error: ' + error.toString());
     }
 }

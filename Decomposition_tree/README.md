@@ -54,18 +54,46 @@ Decomposition_tree/
 └── README.md
 ```
 
-### Step 2: Load Extension in Tableau Desktop
+### Step 2: Start Local Web Server
 
-1. **Open Tableau Desktop 25.2.3** (or later)
+**IMPORTANT:** Tableau requires extensions to be served over HTTP, not from local files.
 
-2. **Open or create a workbook** with data
-   - Ensure your worksheet has at least:
-     - One numeric measure (e.g., Sales, Profit, Quantity)
+**Option A: Double-click to start (easiest)**
+- Double-click `start-server.command` in the Decomposition_tree folder
+- A terminal window will open showing the server is running
+- Keep this window open while using the extension
+
+**Option B: Command line**
+```bash
+cd /Users/keithtroutt/Documents/my-claude-project/Decomposition_tree
+python3 -m http.server 8000
+```
+
+You should see:
+```
+Starting local web server for Tableau Extension...
+Extension will be available at: http://localhost:8000
+```
+
+**Keep the server running** - Don't close this terminal window!
+
+### Step 3: Load Extension in Tableau Desktop
+
+**This is a VIZ EXTENSION** - Add it directly to a worksheet!
+
+1. **Open Tableau Desktop 2022.3+** (Viz extensions require 2022.3 or later)
+
+2. **Create a worksheet** with data
+   - Drag dimensions and measures to your worksheet
+   - Your data should include:
+     - One or more numeric measures (e.g., Sales, Profit, Quantity)
      - Multiple dimensions (e.g., Category, Region, Customer)
 
-3. **Insert the Extension**:
-   - Drag "Extension" from the Objects pane onto your dashboard
-   - OR: Create a new dashboard and add an Extension object
+3. **Add the Extension to the worksheet**:
+   - In the worksheet view, look for the **Analytics** pane (or Show Me)
+   - Click on **"More Options"** (three dots) in the toolbar
+   - Select **"Add Extension"** or find Extension in the Marks card area
+   - **OR** Go to **Worksheet** menu → **Show** → **Extension**
 
 4. **Browse to the manifest file**:
    - Click "Access Local Extensions"
@@ -73,9 +101,11 @@ Decomposition_tree/
    - Select: `DecompositionTree.trex`
    - Click "Open"
 
-5. **Extension should load** and display "Extension loaded successfully"
+5. **Extension should load** from http://localhost:8000 and display "Extension loaded successfully"
 
-### Step 3: Using the Extension
+**Note:** The extension will replace the current visualization in the worksheet view.
+
+### Step 4: Using the Extension
 
 1. **Select a Measure**:
    - Use the dropdown in the header to select which measure to analyze
