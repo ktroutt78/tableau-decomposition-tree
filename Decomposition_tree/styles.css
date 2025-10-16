@@ -1,0 +1,342 @@
+/* Global Styles */
+* {
+    margin: 0;
+    padding: 0;
+    box-sizing: border-box;
+}
+
+body {
+    font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+    background: #f5f7fa;
+    overflow: hidden;
+}
+
+#container {
+    width: 100%;
+    height: 100vh;
+    display: flex;
+    flex-direction: column;
+}
+
+/* Header Controls */
+#header {
+    background: white;
+    padding: 12px 20px;
+    border-bottom: 1px solid #e1e4e8;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+    box-shadow: 0 2px 4px rgba(0,0,0,0.05);
+}
+
+#controls {
+    display: flex;
+    gap: 10px;
+    align-items: center;
+}
+
+.control-btn {
+    padding: 8px 16px;
+    background: #4A90E2;
+    color: white;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 500;
+    transition: background 0.2s;
+}
+
+.control-btn:hover {
+    background: #357ABD;
+}
+
+.control-btn:disabled {
+    background: #ccc;
+    cursor: not-allowed;
+}
+
+.control-select {
+    padding: 8px 12px;
+    border: 1px solid #d1d5da;
+    border-radius: 4px;
+    font-size: 14px;
+    min-width: 200px;
+}
+
+#status {
+    font-size: 14px;
+    color: #586069;
+    font-style: italic;
+}
+
+/* Tree Container */
+#tree-container {
+    flex: 1;
+    overflow: auto;
+    background: #ffffff;
+    position: relative;
+}
+
+#tree-svg {
+    width: 100%;
+    height: 100%;
+}
+
+/* Tree Node Styles */
+.tree-node {
+    cursor: pointer;
+}
+
+.node-rect {
+    fill: #4A90E2;
+    stroke: #357ABD;
+    stroke-width: 2px;
+    rx: 6;
+    transition: all 0.3s;
+}
+
+.node-rect:hover {
+    fill: #357ABD;
+    stroke: #2868A6;
+}
+
+.node-rect.expandable {
+    stroke-dasharray: 5, 5;
+}
+
+.node-text {
+    fill: white;
+    font-size: 14px;
+    font-weight: 500;
+    pointer-events: none;
+}
+
+.node-value {
+    fill: white;
+    font-size: 16px;
+    font-weight: bold;
+    pointer-events: none;
+}
+
+.node-percentage {
+    fill: white;
+    font-size: 12px;
+    pointer-events: none;
+}
+
+.node-count {
+    fill: rgba(255,255,255,0.8);
+    font-size: 11px;
+    pointer-events: none;
+}
+
+.tree-link {
+    fill: none;
+    stroke: #d1d5da;
+    stroke-width: 2px;
+}
+
+/* Modal Styles */
+.modal {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+}
+
+.modal-content {
+    background: white;
+    border-radius: 8px;
+    width: 90%;
+    max-width: 500px;
+    max-height: 80vh;
+    display: flex;
+    flex-direction: column;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+}
+
+.modal-header {
+    padding: 20px;
+    border-bottom: 1px solid #e1e4e8;
+    display: flex;
+    justify-content: space-between;
+    align-items: center;
+}
+
+.modal-header h3 {
+    margin: 0;
+    font-size: 18px;
+    color: #24292e;
+}
+
+.close-btn {
+    background: none;
+    border: none;
+    font-size: 28px;
+    color: #586069;
+    cursor: pointer;
+    line-height: 1;
+    padding: 0;
+    width: 30px;
+    height: 30px;
+}
+
+.close-btn:hover {
+    color: #24292e;
+}
+
+.modal-body {
+    padding: 20px;
+    overflow-y: auto;
+    flex: 1;
+}
+
+.search-input {
+    width: 100%;
+    padding: 10px;
+    border: 1px solid #d1d5da;
+    border-radius: 4px;
+    font-size: 14px;
+    margin-bottom: 15px;
+}
+
+.dimension-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+}
+
+.dimension-list li {
+    padding: 12px 16px;
+    cursor: pointer;
+    border-bottom: 1px solid #e1e4e8;
+    transition: background 0.2s;
+}
+
+.dimension-list li:hover {
+    background: #f6f8fa;
+}
+
+.dimension-list li:active {
+    background: #e1e4e8;
+}
+
+/* Configuration Dialog */
+#configDialog {
+    position: fixed;
+    top: 0;
+    left: 0;
+    width: 100%;
+    height: 100%;
+    background: rgba(0, 0, 0, 0.5);
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    z-index: 1000;
+}
+
+.config-content {
+    background: white;
+    border-radius: 8px;
+    width: 90%;
+    max-width: 400px;
+    padding: 24px;
+    box-shadow: 0 4px 20px rgba(0,0,0,0.2);
+}
+
+.config-content h2 {
+    margin-bottom: 20px;
+    font-size: 20px;
+    color: #24292e;
+}
+
+.config-section {
+    margin-bottom: 20px;
+}
+
+.config-section label {
+    display: block;
+    margin-bottom: 8px;
+    font-size: 14px;
+    color: #24292e;
+    font-weight: 500;
+}
+
+.config-section input[type="checkbox"] {
+    margin-right: 8px;
+}
+
+.config-section select,
+.config-section input[type="color"] {
+    width: 100%;
+    padding: 8px;
+    border: 1px solid #d1d5da;
+    border-radius: 4px;
+    font-size: 14px;
+}
+
+.config-actions {
+    display: flex;
+    gap: 10px;
+    justify-content: flex-end;
+    margin-top: 24px;
+}
+
+.btn-primary,
+.btn-secondary {
+    padding: 8px 20px;
+    border: none;
+    border-radius: 4px;
+    cursor: pointer;
+    font-size: 14px;
+    font-weight: 500;
+    transition: background 0.2s;
+}
+
+.btn-primary {
+    background: #4A90E2;
+    color: white;
+}
+
+.btn-primary:hover {
+    background: #357ABD;
+}
+
+.btn-secondary {
+    background: #e1e4e8;
+    color: #24292e;
+}
+
+.btn-secondary:hover {
+    background: #d1d5da;
+}
+
+/* Tooltip */
+.tooltip {
+    position: absolute;
+    padding: 8px 12px;
+    background: rgba(0, 0, 0, 0.8);
+    color: white;
+    border-radius: 4px;
+    font-size: 12px;
+    pointer-events: none;
+    z-index: 100;
+    display: none;
+}
+
+/* Loading State */
+.loading {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    height: 100%;
+    font-size: 16px;
+    color: #586069;
+}

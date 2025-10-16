@@ -1,0 +1,79 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Decomposition Tree</title>
+    <link rel="stylesheet" href="styles.css">
+
+    <!-- Tableau Extensions API -->
+    <script src="https://cdn.online.tableau.com/extensions/1.latest/tableau.extensions-1.latest.min.js"></script>
+
+    <!-- D3.js for tree visualization -->
+    <script src="https://d3js.org/d3.v7.min.js"></script>
+</head>
+<body>
+    <div id="container">
+        <!-- Header Controls -->
+        <div id="header">
+            <div id="controls">
+                <button id="resetBtn" class="control-btn" title="Reset to root">Reset</button>
+                <select id="measureSelect" class="control-select">
+                    <option value="">Select Measure...</option>
+                </select>
+                <button id="configBtn" class="control-btn" title="Settings">⚙️</button>
+            </div>
+            <div id="status">Initializing...</div>
+        </div>
+
+        <!-- Main Tree Visualization Area -->
+        <div id="tree-container">
+            <svg id="tree-svg"></svg>
+        </div>
+
+        <!-- Dimension Selection Modal -->
+        <div id="dimensionModal" class="modal" style="display: none;">
+            <div class="modal-content">
+                <div class="modal-header">
+                    <h3>Select Dimension to Drill Down</h3>
+                    <button class="close-btn" onclick="closeDimensionModal()">&times;</button>
+                </div>
+                <div class="modal-body">
+                    <input type="text" id="dimensionSearch" placeholder="Search dimensions..." class="search-input">
+                    <ul id="dimensionList" class="dimension-list"></ul>
+                </div>
+            </div>
+        </div>
+    </div>
+
+    <!-- Configuration Dialog (Tableau Settings) -->
+    <div id="configDialog" style="display: none;">
+        <div class="config-content">
+            <h2>Configuration</h2>
+            <div class="config-section">
+                <label>
+                    <input type="checkbox" id="showRecordCounts" checked>
+                    Show Record Counts
+                </label>
+            </div>
+            <div class="config-section">
+                <label>Tree Orientation:</label>
+                <select id="orientationSelect">
+                    <option value="horizontal">Horizontal</option>
+                    <option value="vertical">Vertical</option>
+                </select>
+            </div>
+            <div class="config-section">
+                <label>Node Color:</label>
+                <input type="color" id="nodeColor" value="#4A90E2">
+            </div>
+            <div class="config-actions">
+                <button id="saveConfigBtn" class="btn-primary">Save</button>
+                <button id="cancelConfigBtn" class="btn-secondary">Cancel</button>
+            </div>
+        </div>
+    </div>
+
+    <script src="decomposition-tree.js"></script>
+</body>
+</html>

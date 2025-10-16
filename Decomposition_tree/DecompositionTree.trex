@@ -1,0 +1,24 @@
+<?xml version="1.0" encoding="utf-8"?>
+<manifest manifest-version="0.1" xmlns="http://www.tableau.com/xml/extension_manifest">
+  <dashboard-extension id="com.tableau.extensions.decomposition-tree" extension-version="1.0.0">
+    <default-locale>en_US</default-locale>
+    <name resource-id="name"/>
+    <description>Interactive decomposition tree for hierarchical data exploration</description>
+    <author name="Analytics Consultant" email="consultant@example.com" organization="Custom Extensions" website="https://github.com"/>
+    <min-api-version>1.0</min-api-version>
+    <source-location>
+      <url>file:///Users/keithtroutt/Documents/my-claude-project/Decomposition_tree/index.html</url>
+    </source-location>
+    <icon>
+      <!-- Base64 encoded icon (optional) -->
+    </icon>
+    <permissions>
+      <permission>full data</permission>
+    </permissions>
+  </dashboard-extension>
+  <resources>
+    <resource id="name">
+      <text locale="en_US">Decomposition Tree</text>
+    </resource>
+  </resources>
+</manifest>
