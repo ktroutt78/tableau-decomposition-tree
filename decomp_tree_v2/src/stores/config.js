@@ -10,6 +10,7 @@ export const defaultConfig = {
   cornerRadius: 10,
   colorTheme: 'blue',
   customColorStart: '#4A90E2',
+  customColorMiddle: '#2d6ab5',
   customColorEnd: '#1a4e8a',
   linkStyle: 'curved',
   bgColor: '#ffffff',

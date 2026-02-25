@@ -92,6 +92,13 @@
             </div>
           </label>
           <label class="color-picker-label">
+            <span>Middle color</span>
+            <div class="color-pick-row">
+              <input type="color" bind:value={draft.customColorMiddle} class="color-input" />
+              <span class="color-hex">{draft.customColorMiddle}</span>
+            </div>
+          </label>
+          <label class="color-picker-label">
             <span>End color</span>
             <div class="color-pick-row">
               <input type="color" bind:value={draft.customColorEnd} class="color-input" />

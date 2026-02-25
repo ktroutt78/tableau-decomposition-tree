@@ -226,8 +226,15 @@
     const negColor = cfg.negativeColor || '#f472b6';
     const theme     = COLOR_THEMES[cfg.colorTheme] || COLOR_THEMES.blue;
     const startColor = cfg.colorTheme === 'custom' ? (cfg.customColorStart || '#5b8dee') : theme.start;
+    const middleColor = cfg.colorTheme === 'custom' ? (cfg.customColorMiddle || null) : null;
     const endColor   = cfg.colorTheme === 'custom' ? (cfg.customColorEnd   || startColor) : theme.end;
-    const colorInterp = d3.interpolateRgb(startColor, endColor);
+    const colorInterp = (t) => {
+      if (cfg.colorTheme === 'custom' && middleColor) {
+        if (t <= 0.5) return d3.interpolateRgb(startColor, middleColor)(t * 2);
+        return d3.interpolateRgb(middleColor, endColor)((t - 0.5) * 2);
+      }
+      return d3.interpolateRgb(startColor, endColor)(t);
+    };
 
     // Returns a color for a node based on its position among siblings.
     // When useGradient is off, all positive bars share the start color.
