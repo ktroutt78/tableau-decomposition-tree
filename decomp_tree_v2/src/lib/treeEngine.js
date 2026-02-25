@@ -20,23 +20,54 @@ function getFieldValue(row, field) {
   return dv;
 }
 
+// True if the value is null/empty for breakdown dimension checks
+function isBreakdownEmpty(row, field) {
+  const dv = getFieldValue(row, field);
+  if (dv === undefined || dv === null) return true;
+  const raw = typeof dv === 'object' ? dv.value : dv;
+  return raw === undefined || raw === null || raw === '' || String(raw).trim() === '';
+}
+
 export function buildRootNode(rows, encMap) {
   const valueField = encMap.value?.[0];
   if (!valueField) return null;
 
   const valueName = valueField.name;
-  let total = 0;
-  let count = 0;
+  const breakdownFields = encMap.breakdown || [];
 
+  // For non-additive measures (e.g. COUNTD), summing per-slice values overstates the total.
+  // If Tableau sent a grand-total row (all breakdown dims null/empty), use that value for the root.
+  let total = null;
   for (const row of rows) {
-    const dv = getFieldValue(row, valueField);
-    if (dv !== undefined && dv !== null) {
-      const v = typeof dv === 'object' ? dv.value : dv;
-      if (v !== null && !isNaN(Number(v))) {
-        total += Number(v);
-        count++;
+    const allBreakdownEmpty = breakdownFields.length === 0 || breakdownFields.every(f => isBreakdownEmpty(row, f));
+    if (allBreakdownEmpty) {
+      const dv = getFieldValue(row, valueField);
+      if (dv !== undefined && dv !== null) {
+        const v = typeof dv === 'object' ? dv.value : dv;
+        if (v !== null && !isNaN(Number(v))) {
+          total = Number(v);
+          break;
+        }
       }
     }
+  }
+
+  // No total row: fall back to summing (correct for SUM, wrong for COUNTD / non-additive)
+  let count = 0;
+  if (total === null) {
+    total = 0;
+    for (const row of rows) {
+      const dv = getFieldValue(row, valueField);
+      if (dv !== undefined && dv !== null) {
+        const v = typeof dv === 'object' ? dv.value : dv;
+        if (v !== null && !isNaN(Number(v))) {
+          total += Number(v);
+          count++;
+        }
+      }
+    }
+  } else {
+    count = rows.length;
   }
 
   return {

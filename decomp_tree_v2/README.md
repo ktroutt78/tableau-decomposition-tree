@@ -204,6 +204,13 @@ This extension is a static JavaScript application. Here is exactly what happens 
 3. **All computation is local** — The tree layout, aggregation, and rendering are performed by D3.js and Svelte running in Tableau's embedded Chromium process. Nothing is sent to an external server.
 4. **Settings are stored by Tableau** — Configuration is saved to the workbook via Tableau's own extension settings API (`tableau.extensions.settings`), not to any external service.
 
+### Root total and distinct count (COUNTD)
+
+The root node shows a single total for your measure. Tableau sends the extension **summary data** (one row per combination of breakdown dimensions). The extension uses a **grand-total row** when Tableau includes one (a row where all breakdown dimensions are empty). If no such row exists, it **sums** the measure across all rows.
+
+- **Sum-type measures** (e.g. SUM(Sales)): Summing is correct and matches a simple sheet total.
+- **Distinct count** (e.g. COUNTD(Profiles)): Summing per-slice **overstates** the root total, because the same ID can appear in multiple slices. If your root total is higher than the same measure on a new sheet with the same filters, use a **single total row** in the data (e.g. a table with only the measure and no dimensions) if possible, or be aware the root is an upper bound. The extension will use a total row when Tableau sends one.
+
 ### What GitHub Pages does and does not see
 
 | | GitHub Pages |
