@@ -11,8 +11,31 @@ const httpsOpts = hasCerts
   ? { key: fs.readFileSync(keyFile), cert: fs.readFileSync(certFile) }
   : false;
 
+// Append cache-busting query param to built index.html so Tableau/browsers load latest bundle
+function cacheBustPlugin() {
+  return {
+    name: 'cache-bust',
+    writeBundle() {
+      return new Promise((resolve) => {
+        setTimeout(() => {
+          const indexPath = path.resolve('./docs/index.html');
+          if (fs.existsSync(indexPath)) {
+            let html = fs.readFileSync(indexPath, 'utf8');
+            const v = `v=${Date.now()}`;
+            html = html
+              .replace(/src="([^"]+\.js)"/g, `src="$1?${v}"`)
+              .replace(/href="([^"]+\.css)"/g, `href="$1?${v}"`);
+            fs.writeFileSync(indexPath, html);
+          }
+          resolve();
+        }, 100);
+      });
+    }
+  };
+}
+
 export default defineConfig({
-  plugins: [svelte()],
+  plugins: [svelte(), cacheBustPlugin()],
   test: {
     globals: true,
     environment: 'node',

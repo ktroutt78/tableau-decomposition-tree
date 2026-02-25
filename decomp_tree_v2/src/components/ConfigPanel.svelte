@@ -2,8 +2,8 @@
   import { config, defaultConfig, saveConfig } from '../stores/config.js';
   import { configPanelOpen } from '../stores/treeState.js';
 
-  // Work on a local draft — only commit on "Apply"
-  let draft = { ...$config };
+  // Work on a local draft — only commit on "Apply". Merge with defaultConfig so new keys (e.g. linkStrokeWidth) always exist.
+  let draft = { ...defaultConfig, ...$config };
 
   const colorThemes = [
     { id: 'blue',   label: 'Ocean',    start: '#5b8dee', end: '#1e3fa8' },
