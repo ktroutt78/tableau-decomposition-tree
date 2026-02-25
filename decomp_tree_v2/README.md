@@ -2,8 +2,8 @@
 
 An interactive hierarchical decomposition tree built with Svelte and D3. Drop a measure onto the **Measure** shelf and dimensions onto the **Dimension** shelf, then drill down interactively to explore what's driving your numbers.
 
-**Live URL:** `https://ktroutt78.github.io/decomposition_tree/index.html`
-**Manifest:** `https://ktroutt78.github.io/decomposition_tree/DecompositionTreeV2.trex`
+**Live URL:** `https://ktroutt78.github.io/tableau-decomposition-tree/decomp_tree_v2/docs/index.html`
+**Manifest:** `https://ktroutt78.github.io/tableau-decomposition-tree/decomp_tree_v2/docs/DecompositionTreeV2.trex`
 
 ---
 
@@ -253,7 +253,7 @@ To load in Tableau Desktop during development, point the `.trex` file at `https:
 npm run build
 ```
 
-Outputs built files to `docs/` with the correct GitHub Pages base path (`/decomposition_tree/`).
+Outputs built files to `docs/` with the correct GitHub Pages base path (`/tableau-decomposition-tree/decomp_tree_v2/docs/`).
 
 ### Deploying Updates
 

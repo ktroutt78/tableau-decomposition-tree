@@ -18,7 +18,7 @@ export default defineConfig({
     environment: 'node',
     include: ['src/**/*.test.js']
   },
-  base: '/decomposition_tree/',
+  base: '/tableau-decomposition-tree/decomp_tree_v2/docs/',
   server:  { port: 8000, strictPort: true, https: httpsOpts },
   preview: { port: 8000, strictPort: true, https: httpsOpts },
   build: {
