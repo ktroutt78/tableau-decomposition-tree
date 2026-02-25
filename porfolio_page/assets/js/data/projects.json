@@ -1,0 +1,119 @@
+{
+  "projects": [
+    {
+      "id": 1,
+      "title": "Sales Performance Dashboard",
+      "shortDescription": "Interactive dashboard analyzing quarterly sales trends across multiple regions",
+      "fullDescription": "A comprehensive sales analytics dashboard that provides real-time insights into sales performance, regional trends, and key performance indicators. This dashboard serves as the primary tool for the sales leadership team to track progress and identify opportunities.",
+      "category": "tableau",
+      "tools": ["Tableau", "SQL"],
+      "thumbnail": "https://via.placeholder.com/400x250/10B981/FFFFFF?text=Sales+Dashboard",
+      "images": [
+        "https://via.placeholder.com/1000x600/10B981/FFFFFF?text=Sales+Dashboard+Main",
+        "https://via.placeholder.com/1000x600/3B82F6/FFFFFF?text=Sales+Details"
+      ],
+      "embedType": "image",
+      "embedUrl": "",
+      "challenge": "The sales team was spending over 20 hours per week manually compiling reports from multiple data sources. There was no real-time visibility into performance metrics, leading to delayed decision-making.",
+      "solution": "Developed an interactive Tableau dashboard that automatically pulls data from the CRM and displays key metrics including revenue trends, top performers, pipeline status, and regional comparisons. Implemented drill-down functionality for detailed analysis.",
+      "impact": "Reduced reporting time by 75%, enabled daily performance tracking instead of weekly, and identified $2M in untapped revenue opportunities through advanced analytics.",
+      "featured": true,
+      "date": "2024-03"
+    },
+    {
+      "id": 2,
+      "title": "Customer Segmentation Analysis",
+      "shortDescription": "Power BI dashboard for customer behavior analysis and segmentation",
+      "fullDescription": "Advanced customer analytics platform built in Power BI that segments customers based on purchasing behavior, lifetime value, and engagement patterns. Provides actionable insights for targeted marketing campaigns.",
+      "category": "powerbi",
+      "tools": ["Power BI", "Python", "DAX"],
+      "thumbnail": "https://via.placeholder.com/400x250/3B82F6/FFFFFF?text=Customer+Analytics",
+      "images": [
+        "https://via.placeholder.com/1000x600/3B82F6/FFFFFF?text=Customer+Segments"
+      ],
+      "embedType": "image",
+      "embedUrl": "",
+      "challenge": "Marketing campaigns were using a one-size-fits-all approach, resulting in low conversion rates and wasted budget. No clear understanding of customer segments existed.",
+      "solution": "Built a Power BI dashboard using Python for clustering analysis and DAX for complex calculations. Created five distinct customer segments with detailed profiles, purchasing patterns, and recommended engagement strategies.",
+      "impact": "Increased marketing campaign ROI by 45%, improved customer retention by 23%, and enabled personalized marketing strategies for each segment.",
+      "featured": true,
+      "date": "2024-01"
+    },
+    {
+      "id": 3,
+      "title": "Financial KPI Tracker",
+      "shortDescription": "Real-time financial metrics dashboard for executive leadership",
+      "fullDescription": "Executive dashboard providing at-a-glance view of critical financial KPIs including revenue, expenses, profit margins, cash flow, and budget variance. Designed for C-suite consumption with mobile-responsive design.",
+      "category": "tableau",
+      "tools": ["Tableau", "SQL", "Python"],
+      "thumbnail": "https://via.placeholder.com/400x250/10B981/FFFFFF?text=Financial+KPIs",
+      "images": [
+        "https://via.placeholder.com/1000x600/10B981/FFFFFF?text=KPI+Dashboard"
+      ],
+      "embedType": "image",
+      "embedUrl": "",
+      "challenge": "Executive team received financial reports on a monthly basis, often 2-3 weeks delayed. No ability to drill into specific areas of concern quickly.",
+      "solution": "Created a real-time financial dashboard with automated data refresh every morning. Implemented alert system for KPIs exceeding thresholds and enabled mobile access for executives on the go.",
+      "impact": "Executives now have daily financial visibility, reduced month-end closing time by 40%, and identified cost-saving opportunities worth $1.5M annually.",
+      "featured": false,
+      "date": "2023-11"
+    },
+    {
+      "id": 4,
+      "title": "Inventory Optimization Tool",
+      "shortDescription": "Python-powered analytics tool for inventory management and forecasting",
+      "fullDescription": "A Python-based analytical tool that predicts optimal inventory levels based on historical sales data, seasonality, and market trends. Integrates with existing ERP system and provides visualizations in Tableau.",
+      "category": "python",
+      "tools": ["Python", "Tableau", "SQL"],
+      "thumbnail": "https://via.placeholder.com/400x250/6366F1/FFFFFF?text=Inventory+Tool",
+      "images": [
+        "https://via.placeholder.com/1000x600/6366F1/FFFFFF?text=Inventory+Analytics"
+      ],
+      "embedType": "image",
+      "embedUrl": "",
+      "challenge": "Company was experiencing frequent stockouts of high-demand items while maintaining excess inventory of slow-moving products, tying up capital and warehouse space.",
+      "solution": "Developed Python scripts using pandas and scikit-learn to analyze 3 years of sales data, identify patterns, and predict optimal stock levels. Created Tableau visualization to monitor inventory health and receive restock alerts.",
+      "impact": "Reduced stockouts by 65%, decreased excess inventory by 30%, and freed up $800K in working capital.",
+      "featured": false,
+      "date": "2023-09"
+    },
+    {
+      "id": 5,
+      "title": "HR Analytics Dashboard",
+      "shortDescription": "Employee metrics and workforce analytics in Power BI",
+      "fullDescription": "Comprehensive HR dashboard tracking employee satisfaction, turnover rates, hiring funnel metrics, diversity statistics, and performance indicators. Helps HR team make data-driven talent decisions.",
+      "category": "powerbi",
+      "tools": ["Power BI", "DAX", "Excel"],
+      "thumbnail": "https://via.placeholder.com/400x250/EC4899/FFFFFF?text=HR+Analytics",
+      "images": [
+        "https://via.placeholder.com/1000x600/EC4899/FFFFFF?text=HR+Dashboard"
+      ],
+      "embedType": "image",
+      "embedUrl": "",
+      "challenge": "HR team had no centralized view of workforce metrics. Turnover analysis was reactive rather than predictive, and diversity initiatives lacked measurable tracking.",
+      "solution": "Built Power BI dashboard integrating HRIS data with survey results and performance data. Created turnover prediction model and diversity tracking across departments and levels.",
+      "impact": "Identified early warning signs for at-risk employees, improved retention by 18%, and provided data-driven insights for diversity and inclusion initiatives.",
+      "featured": false,
+      "date": "2023-07"
+    },
+    {
+      "id": 6,
+      "title": "Supply Chain Visibility Dashboard",
+      "shortDescription": "End-to-end supply chain monitoring and analytics platform",
+      "fullDescription": "Real-time supply chain dashboard tracking shipments, supplier performance, lead times, and logistics costs. Provides visibility into the entire supply chain from order to delivery.",
+      "category": "tableau",
+      "tools": ["Tableau", "SQL"],
+      "thumbnail": "https://via.placeholder.com/400x250/F59E0B/FFFFFF?text=Supply+Chain",
+      "images": [
+        "https://via.placeholder.com/1000x600/F59E0B/FFFFFF?text=Supply+Chain+Dashboard"
+      ],
+      "embedType": "image",
+      "embedUrl": "",
+      "challenge": "Supply chain team had no visibility into shipment status, supplier performance was not measured, and delivery delays were discovered reactively causing customer service issues.",
+      "solution": "Integrated data from multiple logistics providers into a single Tableau dashboard. Created supplier scorecards, shipment tracking, and automated alerts for delays.",
+      "impact": "Improved on-time delivery rate from 82% to 96%, reduced supplier-related issues by 40%, and improved customer satisfaction scores.",
+      "featured": false,
+      "date": "2023-05"
+    }
+  ]
+}

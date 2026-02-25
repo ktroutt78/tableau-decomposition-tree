@@ -1,0 +1,1176 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VSP Payment Statement Parser</title>
+    <style>
+        * {
+            margin: 0;
+            padding: 0;
+            box-sizing: border-box;
+        }
+
+        body {
+            font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, Oxygen, Ubuntu, Cantarell, sans-serif;
+            background: linear-gradient(135deg, #667eea 0%, #764ba2 100%);
+            min-height: 100vh;
+            padding: 20px;
+        }
+
+        .container {
+            max-width: 1200px;
+            margin: 0 auto;
+        }
+
+        .card {
+            background: white;
+            border-radius: 12px;
+            padding: 30px;
+            box-shadow: 0 10px 40px rgba(0, 0, 0, 0.1);
+            margin-bottom: 20px;
+        }
+
+        h1 {
+            color: #333;
+            margin-bottom: 10px;
+            font-size: 28px;
+        }
+
+        .subtitle {
+            color: #666;
+            margin-bottom: 30px;
+            font-size: 14px;
+        }
+
+        .upload-section {
+            border: 2px dashed #667eea;
+            border-radius: 8px;
+            padding: 40px;
+            text-align: center;
+            background: #f8f9ff;
+            transition: all 0.3s ease;
+        }
+
+        .upload-section:hover {
+            border-color: #764ba2;
+            background: #f0f1ff;
+        }
+
+        .file-input-wrapper {
+            position: relative;
+            overflow: hidden;
+            display: inline-block;
+        }
+
+        .file-input-wrapper input[type=file] {
+            position: absolute;
+            left: -9999px;
+        }
+
+        .file-input-label {
+            background: #667eea;
+            color: white;
+            padding: 12px 30px;
+            border-radius: 6px;
+            cursor: pointer;
+            font-weight: 500;
+            display: inline-block;
+            transition: background 0.3s ease;
+        }
+
+        .file-input-label:hover {
+            background: #764ba2;
+        }
+
+        .file-name {
+            margin-top: 15px;
+            color: #333;
+            font-size: 14px;
+        }
+
+        .api-key-section {
+            margin-bottom: 20px;
+        }
+
+        .api-key-section label {
+            display: block;
+            margin-bottom: 8px;
+            color: #333;
+            font-weight: 500;
+        }
+
+        .api-key-section input {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 14px;
+        }
+
+        .process-btn {
+            background: #667eea;
+            color: white;
+            padding: 12px 40px;
+            border: none;
+            border-radius: 6px;
+            font-size: 16px;
+            font-weight: 500;
+            cursor: pointer;
+            margin-top: 20px;
+            transition: all 0.3s ease;
+        }
+
+        .process-btn:hover:not(:disabled) {
+            background: #764ba2;
+            transform: translateY(-2px);
+            box-shadow: 0 5px 15px rgba(102, 126, 234, 0.4);
+        }
+
+        .process-btn:disabled {
+            background: #ccc;
+            cursor: not-allowed;
+        }
+
+        .loading {
+            display: none;
+            text-align: center;
+            padding: 30px;
+            color: #667eea;
+            font-weight: 500;
+        }
+
+        .loading.active {
+            display: block;
+        }
+
+        .spinner {
+            border: 4px solid #f3f3f3;
+            border-top: 4px solid #667eea;
+            border-radius: 50%;
+            width: 50px;
+            height: 50px;
+            animation: spin 1s linear infinite;
+            margin: 0 auto 15px;
+        }
+
+        @keyframes spin {
+            0% { transform: rotate(0deg); }
+            100% { transform: rotate(360deg); }
+        }
+
+        .loading-text {
+            font-size: 16px;
+            margin-bottom: 10px;
+        }
+
+        .loading-subtext {
+            font-size: 14px;
+            color: #999;
+            margin-top: 10px;
+        }
+
+        .progress-bar {
+            width: 100%;
+            height: 6px;
+            background: #f3f3f3;
+            border-radius: 3px;
+            margin-top: 15px;
+            overflow: hidden;
+        }
+
+        .progress-bar-fill {
+            height: 100%;
+            background: linear-gradient(90deg, #667eea, #764ba2);
+            border-radius: 3px;
+            transition: width 0.3s ease;
+            animation: progressPulse 2s ease-in-out infinite;
+        }
+
+        @keyframes progressPulse {
+            0%, 100% { opacity: 1; }
+            50% { opacity: 0.7; }
+        }
+
+        .success-message {
+            background: #d1fae5;
+            border: 1px solid #6ee7b7;
+            color: #065f46;
+            padding: 15px;
+            border-radius: 6px;
+            margin-top: 20px;
+            display: none;
+        }
+
+        .success-message.active {
+            display: block;
+        }
+
+        .results-section {
+            display: none;
+        }
+
+        .results-section.active {
+            display: block;
+        }
+
+        .results-header {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            margin-bottom: 20px;
+        }
+
+        .results-header h2 {
+            color: #333;
+            font-size: 22px;
+        }
+
+        .export-btn {
+            background: #10b981;
+            color: white;
+            padding: 10px 20px;
+            border: none;
+            border-radius: 6px;
+            font-size: 14px;
+            font-weight: 500;
+            cursor: pointer;
+            transition: background 0.3s ease;
+        }
+
+        .export-btn:hover {
+            background: #059669;
+        }
+
+        .search-filter-section {
+            margin-bottom: 20px;
+            padding: 15px;
+            background: #f8f9ff;
+            border-radius: 6px;
+        }
+
+        .search-box {
+            width: 100%;
+            padding: 10px;
+            border: 1px solid #ddd;
+            border-radius: 6px;
+            font-size: 14px;
+            margin-bottom: 10px;
+        }
+
+        .filter-buttons {
+            display: flex;
+            gap: 10px;
+            flex-wrap: wrap;
+        }
+
+        .filter-btn {
+            background: white;
+            color: #667eea;
+            padding: 6px 12px;
+            border: 1px solid #667eea;
+            border-radius: 6px;
+            font-size: 13px;
+            cursor: pointer;
+            transition: all 0.3s ease;
+        }
+
+        .filter-btn:hover {
+            background: #f8f9ff;
+        }
+
+        .filter-btn.active {
+            background: #667eea;
+            color: white;
+        }
+
+        .results-table {
+            width: 100%;
+            border-collapse: collapse;
+            overflow: hidden;
+        }
+
+        .results-table th {
+            background: #667eea;
+            color: white;
+            padding: 12px;
+            text-align: left;
+            font-weight: 500;
+        }
+
+        .results-table td {
+            padding: 12px;
+            border-bottom: 1px solid #eee;
+        }
+
+        .results-table tr:hover {
+            background: #f8f9ff;
+        }
+
+        .results-table tr.duplicate {
+            background: #fef3c7;
+        }
+
+        .results-table tr.duplicate:hover {
+            background: #fde68a;
+        }
+
+        .duplicate-badge {
+            display: inline-block;
+            background: #f59e0b;
+            color: white;
+            padding: 2px 8px;
+            border-radius: 4px;
+            font-size: 11px;
+            font-weight: 600;
+            margin-left: 8px;
+        }
+
+        .total-count {
+            margin-top: 20px;
+            padding: 15px;
+            background: #f8f9ff;
+            border-left: 4px solid #667eea;
+            color: #333;
+            font-weight: 500;
+        }
+
+        .stats-row {
+            display: flex;
+            gap: 20px;
+            margin-top: 10px;
+            font-size: 14px;
+        }
+
+        .stat-item {
+            color: #666;
+        }
+
+        .stat-value {
+            font-weight: 600;
+            color: #667eea;
+        }
+
+        .error {
+            background: #fee;
+            border: 1px solid #fcc;
+            color: #c33;
+            padding: 15px;
+            border-radius: 6px;
+            margin-top: 20px;
+            display: none;
+        }
+
+        .error.active {
+            display: block;
+        }
+    </style>
+</head>
+<body>
+    <div class="container">
+        <div class="card">
+            <h1>VSP Payment Statement Parser</h1>
+            <p class="subtitle">Upload a VSP Vision Care "Explanation of Payment" PDF to extract patient information</p>
+
+            <div class="api-key-section">
+                <label for="apiKey">Anthropic API Key:</label>
+                <input type="password" id="apiKey" placeholder="sk-ant-...">
+            </div>
+
+            <div class="upload-section">
+                <div class="file-input-wrapper">
+                    <input type="file" id="pdfFile" accept=".pdf" multiple>
+                    <label for="pdfFile" class="file-input-label">Choose PDF File(s)</label>
+                </div>
+                <div class="file-name" id="fileName">No files selected</div>
+            </div>
+
+            <button class="process-btn" id="processBtn" disabled>Process PDF</button>
+
+            <div class="error" id="errorMessage"></div>
+
+            <div class="success-message" id="successMessage"></div>
+
+            <div class="loading" id="loading">
+                <div class="spinner"></div>
+                <div class="loading-text" id="loadingText">Processing PDF with Claude AI...</div>
+                <div class="loading-subtext" id="loadingSubtext">This may take 30-60 seconds</div>
+                <div class="progress-bar">
+                    <div class="progress-bar-fill" id="progressBarFill" style="width: 0%"></div>
+                </div>
+            </div>
+        </div>
+
+        <div class="card results-section" id="resultsSection">
+            <div class="results-header">
+                <h2>Extracted Patient Data</h2>
+                <button class="export-btn" id="exportBtn">Export to CSV</button>
+            </div>
+
+            <div class="search-filter-section">
+                <input type="text" class="search-box" id="searchBox" placeholder="Search by patient name, doctor, or location...">
+                <div class="filter-buttons">
+                    <button class="filter-btn active" id="filterAll">All</button>
+                    <button class="filter-btn" id="filterDuplicates">Duplicates Only</button>
+                    <button class="filter-btn" id="filterUnique">Unique Only</button>
+                </div>
+            </div>
+
+            <div style="overflow-x: auto;">
+                <table class="results-table" id="resultsTable">
+                    <thead>
+                        <tr>
+                            <th>Patient Name</th>
+                            <th>Doctor</th>
+                            <th>Location</th>
+                        </tr>
+                    </thead>
+                    <tbody id="resultsBody">
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="total-count" id="totalCount"></div>
+        </div>
+    </div>
+
+    <script>
+        // Global variables
+        let pdfBase64 = null;
+        let pdfFiles = [];
+        let extractedData = [];
+
+        // DOM elements
+        const pdfFileInput = document.getElementById('pdfFile');
+        const fileNameDisplay = document.getElementById('fileName');
+        const processBtn = document.getElementById('processBtn');
+        const apiKeyInput = document.getElementById('apiKey');
+        const loadingDiv = document.getElementById('loading');
+        const loadingText = document.getElementById('loadingText');
+        const loadingSubtext = document.getElementById('loadingSubtext');
+        const progressBarFill = document.getElementById('progressBarFill');
+        const resultsSection = document.getElementById('resultsSection');
+        const resultsBody = document.getElementById('resultsBody');
+        const totalCount = document.getElementById('totalCount');
+        const exportBtn = document.getElementById('exportBtn');
+        const errorMessage = document.getElementById('errorMessage');
+        const successMessage = document.getElementById('successMessage');
+        const searchBox = document.getElementById('searchBox');
+        const filterAll = document.getElementById('filterAll');
+        const filterDuplicates = document.getElementById('filterDuplicates');
+        const filterUnique = document.getElementById('filterUnique');
+
+        // Filter state
+        let currentFilter = 'all';
+        let currentSearch = '';
+
+        // File input handler
+        pdfFileInput.addEventListener('change', async (e) => {
+            const files = Array.from(e.target.files);
+            if (files.length === 0) return;
+
+            hideError();
+            pdfFiles = [];
+
+            // Validate all files
+            for (const file of files) {
+                // Validate file type
+                if (file.type !== 'application/pdf') {
+                    showError(`Invalid file type: ${file.name}. Please select only PDF files.`);
+                    resetFileInput();
+                    return;
+                }
+
+                // Validate file size (32MB for Claude API limit)
+                if (file.size > 32 * 1024 * 1024) {
+                    showError(`File too large: ${file.name}. PDF must be less than 32MB (Claude API limit).`);
+                    resetFileInput();
+                    return;
+                }
+
+                // Validate file size (minimum 1KB)
+                if (file.size < 1024) {
+                    showError(`File too small: ${file.name}. This doesn't appear to be a valid PDF document.`);
+                    resetFileInput();
+                    return;
+                }
+            }
+
+            // Process all files
+            for (const file of files) {
+                try {
+                    const base64 = await fileToBase64(file);
+                    pdfFiles.push({
+                        name: file.name,
+                        size: file.size,
+                        base64: base64
+                    });
+                } catch (error) {
+                    showError(`Error processing ${file.name}. Please ensure it's a valid PDF.`);
+                    resetFileInput();
+                    return;
+                }
+            }
+
+            // Show file info
+            if (files.length === 1) {
+                const fileSizeMB = (files[0].size / (1024 * 1024)).toFixed(2);
+                fileNameDisplay.innerHTML = `<strong>${files[0].name}</strong> (${fileSizeMB} MB)`;
+            } else {
+                const totalSize = files.reduce((sum, f) => sum + f.size, 0);
+                const totalSizeMB = (totalSize / (1024 * 1024)).toFixed(2);
+                fileNameDisplay.innerHTML = `<strong>${files.length} files selected</strong> (${totalSizeMB} MB total)`;
+            }
+
+            // For single file, maintain backwards compatibility
+            if (pdfFiles.length === 1) {
+                pdfBase64 = pdfFiles[0].base64;
+            }
+
+            updateProcessButton();
+        });
+
+        // Convert file to base64
+        function fileToBase64(file) {
+            return new Promise((resolve, reject) => {
+                const reader = new FileReader();
+                reader.onerror = reject;
+                reader.onload = (event) => {
+                    try {
+                        const base64String = event.target.result.split(',')[1];
+                        if (!base64String) {
+                            throw new Error('Failed to convert PDF to base64');
+                        }
+                        resolve(base64String);
+                    } catch (error) {
+                        reject(error);
+                    }
+                };
+                reader.readAsDataURL(file);
+            });
+        }
+
+        // Reset file input
+        function resetFileInput() {
+            pdfFileInput.value = '';
+            pdfBase64 = null;
+            pdfFiles = [];
+            fileNameDisplay.textContent = 'No files selected';
+            updateProcessButton();
+        }
+
+        // API key input handler
+        apiKeyInput.addEventListener('input', updateProcessButton);
+
+        // Update process button state
+        function updateProcessButton() {
+            const hasFiles = pdfFiles.length > 0 || pdfBase64;
+            const hasApiKey = apiKeyInput.value.trim();
+            processBtn.disabled = !(hasFiles && hasApiKey);
+
+            if (pdfFiles.length > 1) {
+                processBtn.textContent = `Process ${pdfFiles.length} PDFs`;
+            } else {
+                processBtn.textContent = 'Process PDF';
+            }
+        }
+
+        // Process button handler
+        processBtn.addEventListener('click', async () => {
+            hideError();
+            hideSuccess();
+            resultsSection.classList.remove('active');
+            loadingDiv.classList.add('active');
+            processBtn.disabled = true;
+
+            // Start progress simulation
+            startProgressSimulation();
+
+            try {
+                const startTime = Date.now();
+
+                // Handle batch processing for multiple files
+                if (pdfFiles.length > 1) {
+                    extractedData = [];
+                    for (let i = 0; i < pdfFiles.length; i++) {
+                        const file = pdfFiles[i];
+                        loadingText.textContent = `Processing file ${i + 1} of ${pdfFiles.length}: ${file.name}`;
+                        loadingSubtext.textContent = `Please wait...`;
+
+                        const fileData = await processSinglePDF(file.base64);
+                        extractedData.push(...fileData);
+                    }
+                } else {
+                    // Single file processing
+                    await processPDF();
+                }
+
+                const processingTime = ((Date.now() - startTime) / 1000).toFixed(1);
+
+                // Complete progress bar
+                progressBarFill.style.width = '100%';
+                loadingText.textContent = 'Processing complete!';
+                loadingSubtext.textContent = `Processed in ${processingTime}s`;
+
+                setTimeout(() => {
+                    loadingDiv.classList.remove('active');
+                    const fileCount = pdfFiles.length > 1 ? `${pdfFiles.length} files` : '1 file';
+                    showSuccess(`Successfully extracted ${extractedData.length} patient entries from ${fileCount} in ${processingTime}s`);
+                    displayResults();
+                }, 800);
+            } catch (error) {
+                console.error('Error details:', error);
+                showError(error.message || 'An error occurred while processing the PDF(s)');
+                loadingDiv.classList.remove('active');
+            } finally {
+                updateProcessButton();
+                // Reset progress bar
+                setTimeout(() => {
+                    progressBarFill.style.width = '0%';
+                    loadingText.textContent = 'Processing PDF with Claude AI...';
+                    loadingSubtext.textContent = 'This may take 30-60 seconds';
+                }, 1000);
+            }
+        });
+
+        // Progress simulation
+        let progressInterval;
+        function startProgressSimulation() {
+            progressBarFill.style.width = '0%';
+            let progress = 0;
+
+            progressInterval = setInterval(() => {
+                if (progress < 90) {
+                    progress += Math.random() * 3;
+                    progressBarFill.style.width = `${Math.min(progress, 90)}%`;
+
+                    // Update status messages
+                    if (progress < 30) {
+                        loadingText.textContent = 'Uploading PDF to Claude...';
+                    } else if (progress < 60) {
+                        loadingText.textContent = 'Analyzing document structure...';
+                    } else {
+                        loadingText.textContent = 'Extracting patient data...';
+                    }
+                } else {
+                    clearInterval(progressInterval);
+                }
+            }, 200);
+        }
+
+        // Get VSP parsing prompt
+        function getVSPPrompt() {
+            return `PROMPT FOR PROCESSING VSP VISION CARE PAYMENT STATEMENTS
+OBJECTIVE:
+Extract all unique patient names from a VSP Vision Care "Explanation of Payment" document (multi-page PDF statement showing doctor payments for vision services).
+
+DOCUMENT STRUCTURE:
+- Document Type: VSP Vision Care payment remittance
+- Header: Contains check number, date, doctor/practice name, and address
+- Body: Data tables spanning multiple pages with patient visit details
+- Footer: Summary totals and message code explanations
+
+DATA TABLE STRUCTURE:
+Each row contains:
+- Plan (insurance plan type)
+- Insured ID (partially masked with X's)
+- Patient Name (LAST, FIRST format or LAST, FIRST MIDDLE)
+- Pt Acct # (patient account number)
+- Claim Number
+- Service Date
+- Proc Code/Modifiers (procedure codes)
+- Unit(s)
+- Service Description
+- Billed Amount
+- Total Compensation
+- CoPay
+- Patient Pay Materials
+- VSP Lab Allocation
+- VSP Pays Doctor
+- Message Code(s)
+
+KEY IDENTIFIERS:
+- Office location sections begin with: "Office: [ADDRESS]"
+- Doctor sections begin with: "Doctor: [DOCTOR NAME]"
+- Patient entries appear in rows under the "Patient Name" column
+- Some patients may appear multiple times with different claim numbers (same visit, different services OR different visits)
+
+EXTRACTION RULES:
+
+Patient Name Location:
+- Found in the third column after "Insured ID"
+- Format: LAST, FIRST or LAST, FIRST MIDDLE
+- May include suffixes (III, JR, SR, PHD, OD, etc.)
+
+Special Cases to Handle:
+- Patients with multiple entries (different claims/services)
+- "Rev" (Reversal) and "Repay" entries for the same patient
+- Hyphenated last names
+- Names with special characters or accents
+- Multiple middle names or initials
+
+What to EXCLUDE:
+- Header information
+- Column headers repeated across pages
+- Total/subtotal rows
+- Message code explanations
+- Doctor names (unless they are also patients)
+
+Output Format:
+- Provide a 3-column table with headers: Patient Name | Doctor | Location
+- List ALL patient name entries (including duplicates if they appear multiple times)
+- Maintain original name formatting (including capitalization)
+- Include count of total entries at the end
+
+PROCESSING STEPS:
+1. Identify document structure and page boundaries
+2. Locate all office and doctor section headers
+3. For each section, scan the patient name column
+4. Extract every patient name entry along with associated doctor and location
+5. Compile into 3-column table format
+6. Provide count of total entries
+
+EXPECTED OUTPUT STRUCTURE:
+| Patient Name | Doctor | Location |
+|---|---|---|
+| ARCIERI, LINA | MICHAEL W HANSEN OD | 2101 ROSECRANS AVE S EL SEGUNDO CA 90245 |
+| BADER, CHRISTOPH | MICHAEL W HANSEN OD | 2101 ROSECRANS AVE S EL SEGUNDO CA 90245 |
+| BARRIOS, EDWARD | MICHAEL W HANSEN OD | 2101 ROSECRANS AVE S EL SEGUNDO CA 90245 |
+| AMES, ENZO | SOPHIA LAM OD | 2101 ROSECRANS AVE S EL SEGUNDO CA 90245 |
+| ARROWSMITH, FRANCES E | MICHAEL W HANSEN OD | 310 AVE I REDONDO BEACH CA 90277 |
+| ... | ... | ... |
+
+**Total: [X] patient entries**
+
+NOTES:
+- If a patient appears multiple times (different claims), include each occurrence as a separate row
+- Use full address format as it appears in the document
+- Maintain consistency in doctor name formatting throughout
+
+ERROR HANDLING:
+- If name formatting is unclear, list as-is and flag for review
+- If unable to distinguish patient name from other data, note the row number
+- If sections are ambiguous, make best determination and note uncertainty`;
+        }
+
+        // Process single PDF and return extracted data
+        async function processSinglePDF(pdfData) {
+            const apiKey = apiKeyInput.value.trim();
+
+            const prompt = getVSPPrompt();
+
+            console.log('Sending request to backend server...');
+
+            const response = await fetch('http://localhost:3000/api/process-pdf', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    apiKey: apiKey,
+                    pdfBase64: pdfData,
+                    prompt: prompt
+                })
+            });
+
+            console.log('Response status:', response.status);
+
+            if (!response.ok) {
+                const error = await response.json();
+                console.error('API error:', error);
+                throw new Error(error.error || `Server Error: ${response.status} ${response.statusText}`);
+            }
+
+            const data = await response.json();
+            const text = data.text;
+
+            // Parse the markdown table
+            return parseMarkdownTable(text);
+        }
+
+        // Process PDF with Claude API (wrapper for backward compatibility)
+        async function processPDF() {
+            extractedData = await processSinglePDF(pdfBase64);
+
+            if (extractedData.length === 0) {
+                throw new Error('No patient data found in the PDF');
+            }
+        }
+
+        // Parse markdown table from Claude's response
+        function parseMarkdownTable(text) {
+            const lines = text.split('\n');
+            const data = [];
+            let inTable = false;
+
+            for (let i = 0; i < lines.length; i++) {
+                const line = lines[i].trim();
+
+                // Skip empty lines
+                if (!line) continue;
+
+                // Detect table start (header line with |)
+                if (line.includes('Patient Name') && line.includes('Doctor') && line.includes('Location')) {
+                    inTable = true;
+                    continue;
+                }
+
+                // Skip separator line
+                if (line.match(/^\|[\s\-|]+\|$/)) {
+                    continue;
+                }
+
+                // Skip total line
+                if (line.toLowerCase().includes('total:') || line.toLowerCase().includes('**total')) {
+                    break;
+                }
+
+                // Parse data rows
+                if (inTable && line.startsWith('|')) {
+                    const cells = line.split('|')
+                        .map(cell => cell.trim())
+                        .filter(cell => cell);
+
+                    if (cells.length >= 3 && !cells[0].includes('...')) {
+                        data.push({
+                            patientName: cells[0],
+                            doctor: cells[1],
+                            location: cells[2]
+                        });
+                    }
+                }
+            }
+
+            return data;
+        }
+
+        // SKIP OLD DUPLICATE processPDFOld FUNCTION
+        async function processPDFOldDUPLICATE() {
+            const apiKey = apiKeyInput.value.trim();
+
+            const prompt = `PROMPT FOR PROCESSING VSP VISION CARE PAYMENT STATEMENTS
+OBJECTIVE:
+Extract all unique patient names from a VSP Vision Care "Explanation of Payment" document (multi-page PDF statement showing doctor payments for vision services).
+
+DOCUMENT STRUCTURE:
+- Document Type: VSP Vision Care payment remittance
+- Header: Contains check number, date, doctor/practice name, and address
+- Body: Data tables spanning multiple pages with patient visit details
+- Footer: Summary totals and message code explanations
+
+DATA TABLE STRUCTURE:
+Each row contains:
+- Plan (insurance plan type)
+- Insured ID (partially masked with X's)
+- Patient Name (LAST, FIRST format or LAST, FIRST MIDDLE)
+- Pt Acct # (patient account number)
+- Claim Number
+- Service Date
+- Proc Code/Modifiers (procedure codes)
+- Unit(s)
+- Service Description
+- Billed Amount
+- Total Compensation
+- CoPay
+- Patient Pay Materials
+- VSP Lab Allocation
+- VSP Pays Doctor
+- Message Code(s)
+
+KEY IDENTIFIERS:
+- Office location sections begin with: "Office: [ADDRESS]"
+- Doctor sections begin with: "Doctor: [DOCTOR NAME]"
+- Patient entries appear in rows under the "Patient Name" column
+- Some patients may appear multiple times with different claim numbers (same visit, different services OR different visits)
+
+EXTRACTION RULES:
+
+Patient Name Location:
+- Found in the third column after "Insured ID"
+- Format: LAST, FIRST or LAST, FIRST MIDDLE
+- May include suffixes (III, JR, SR, PHD, OD, etc.)
+
+Special Cases to Handle:
+- Patients with multiple entries (different claims/services)
+- "Rev" (Reversal) and "Repay" entries for the same patient
+- Hyphenated last names
+- Names with special characters or accents
+- Multiple middle names or initials
+
+What to EXCLUDE:
+- Header information
+- Column headers repeated across pages
+- Total/subtotal rows
+- Message code explanations
+- Doctor names (unless they are also patients)
+
+Output Format:
+- Provide a 3-column table with headers: Patient Name | Doctor | Location
+- List ALL patient name entries (including duplicates if they appear multiple times)
+- Maintain original name formatting (including capitalization)
+- Include count of total entries at the end
+
+PROCESSING STEPS:
+1. Identify document structure and page boundaries
+2. Locate all office and doctor section headers
+3. For each section, scan the patient name column
+4. Extract every patient name entry along with associated doctor and location
+5. Compile into 3-column table format
+6. Provide count of total entries
+
+EXPECTED OUTPUT STRUCTURE:
+| Patient Name | Doctor | Location |
+|---|---|---|
+| ARCIERI, LINA | MICHAEL W HANSEN OD | 2101 ROSECRANS AVE S EL SEGUNDO CA 90245 |
+| BADER, CHRISTOPH | MICHAEL W HANSEN OD | 2101 ROSECRANS AVE S EL SEGUNDO CA 90245 |
+| BARRIOS, EDWARD | MICHAEL W HANSEN OD | 2101 ROSECRANS AVE S EL SEGUNDO CA 90245 |
+| AMES, ENZO | SOPHIA LAM OD | 2101 ROSECRANS AVE S EL SEGUNDO CA 90245 |
+| ARROWSMITH, FRANCES E | MICHAEL W HANSEN OD | 310 AVE I REDONDO BEACH CA 90277 |
+| ... | ... | ... |
+
+**Total: [X] patient entries**
+
+NOTES:
+- If a patient appears multiple times (different claims), include each occurrence as a separate row
+- Use full address format as it appears in the document
+- Maintain consistency in doctor name formatting throughout
+
+ERROR HANDLING:
+- If name formatting is unclear, list as-is and flag for review
+- If unable to distinguish patient name from other data, note the row number
+- If sections are ambiguous, make best determination and note uncertainty`;
+
+            console.log('Sending request to backend server...');
+
+            const response = await fetch('http://localhost:3000/api/process-pdf', {
+                method: 'POST',
+                headers: {
+                    'Content-Type': 'application/json'
+                },
+                body: JSON.stringify({
+                    apiKey: apiKey,
+                    pdfBase64: pdfBase64,
+                    prompt: prompt
+                })
+            });
+
+            console.log('Response status:', response.status);
+
+            if (!response.ok) {
+                const error = await response.json();
+                console.error('API error:', error);
+                throw new Error(error.error || `Server Error: ${response.status} ${response.statusText}`);
+            }
+
+            const data = await response.json();
+            const text = data.text;
+
+            // Parse the markdown table
+            extractedData = parseMarkdownTable(text);
+
+            if (extractedData.length === 0) {
+                throw new Error('No patient data found in the PDF');
+            }
+
+            // Display results
+            displayResults();
+        }
+
+        // Parse markdown table from Claude's response
+        function parseMarkdownTable(text) {
+            const lines = text.split('\n');
+            const data = [];
+            let inTable = false;
+
+            for (let i = 0; i < lines.length; i++) {
+                const line = lines[i].trim();
+
+                // Skip empty lines
+                if (!line) continue;
+
+                // Detect table start (header line with |)
+                if (line.includes('Patient Name') && line.includes('Doctor') && line.includes('Location')) {
+                    inTable = true;
+                    continue;
+                }
+
+                // Skip separator line
+                if (line.match(/^\|[\s\-|]+\|$/)) {
+                    continue;
+                }
+
+                // Skip total line
+                if (line.toLowerCase().includes('total:') || line.toLowerCase().includes('**total')) {
+                    break;
+                }
+
+                // Parse data rows
+                if (inTable && line.startsWith('|')) {
+                    const cells = line.split('|')
+                        .map(cell => cell.trim())
+                        .filter(cell => cell);
+
+                    if (cells.length >= 3 && !cells[0].includes('...')) {
+                        data.push({
+                            patientName: cells[0],
+                            doctor: cells[1],
+                            location: cells[2]
+                        });
+                    }
+                }
+            }
+
+            return data;
+        }
+
+        // Display results in table
+        function displayResults() {
+            resultsBody.innerHTML = '';
+
+            // Detect duplicates
+            const nameCounts = {};
+            extractedData.forEach(row => {
+                const key = row.patientName.toLowerCase();
+                nameCounts[key] = (nameCounts[key] || 0) + 1;
+            });
+
+            // Filter and search data
+            let filteredData = extractedData.filter(row => {
+                const key = row.patientName.toLowerCase();
+                const isDuplicate = nameCounts[key] > 1;
+
+                // Apply filter
+                if (currentFilter === 'duplicates' && !isDuplicate) return false;
+                if (currentFilter === 'unique' && isDuplicate) return false;
+
+                // Apply search
+                if (currentSearch) {
+                    const searchLower = currentSearch.toLowerCase();
+                    const matchesName = row.patientName.toLowerCase().includes(searchLower);
+                    const matchesDoctor = row.doctor.toLowerCase().includes(searchLower);
+                    const matchesLocation = row.location.toLowerCase().includes(searchLower);
+                    if (!matchesName && !matchesDoctor && !matchesLocation) return false;
+                }
+
+                return true;
+            });
+
+            const nameOccurrences = {};
+            let duplicateCount = 0;
+
+            filteredData.forEach((row, index) => {
+                const key = row.patientName.toLowerCase();
+                const isDuplicate = nameCounts[key] > 1;
+
+                if (isDuplicate) {
+                    nameOccurrences[key] = (nameOccurrences[key] || 0) + 1;
+                    if (nameOccurrences[key] === 2) {
+                        duplicateCount++;
+                    }
+                }
+
+                const tr = document.createElement('tr');
+                if (isDuplicate) {
+                    tr.classList.add('duplicate');
+                }
+
+                const occurrenceNum = nameOccurrences[key] || 1;
+                const duplicateBadge = isDuplicate ? `<span class="duplicate-badge">×${occurrenceNum}</span>` : '';
+
+                tr.innerHTML = `
+                    <td>${escapeHtml(row.patientName)}${duplicateBadge}</td>
+                    <td>${escapeHtml(row.doctor)}</td>
+                    <td>${escapeHtml(row.location)}</td>
+                `;
+                resultsBody.appendChild(tr);
+            });
+
+            // Calculate unique patients
+            const uniqueCount = Object.keys(nameCounts).length;
+            const showingText = (currentFilter !== 'all' || currentSearch) ? ` (Showing ${filteredData.length})` : '';
+
+            totalCount.innerHTML = `
+                <div><strong>Total:</strong> ${extractedData.length} patient entries${showingText}</div>
+                <div class="stats-row">
+                    <div class="stat-item">Unique Patients: <span class="stat-value">${uniqueCount}</span></div>
+                    <div class="stat-item">Duplicates: <span class="stat-value">${duplicateCount}</span></div>
+                </div>
+            `;
+            resultsSection.classList.add('active');
+        }
+
+        // Search handler
+        searchBox.addEventListener('input', (e) => {
+            currentSearch = e.target.value;
+            displayResults();
+        });
+
+        // Filter handlers
+        filterAll.addEventListener('click', () => {
+            currentFilter = 'all';
+            updateFilterButtons();
+            displayResults();
+        });
+
+        filterDuplicates.addEventListener('click', () => {
+            currentFilter = 'duplicates';
+            updateFilterButtons();
+            displayResults();
+        });
+
+        filterUnique.addEventListener('click', () => {
+            currentFilter = 'unique';
+            updateFilterButtons();
+            displayResults();
+        });
+
+        function updateFilterButtons() {
+            [filterAll, filterDuplicates, filterUnique].forEach(btn => btn.classList.remove('active'));
+            if (currentFilter === 'all') filterAll.classList.add('active');
+            if (currentFilter === 'duplicates') filterDuplicates.classList.add('active');
+            if (currentFilter === 'unique') filterUnique.classList.add('active');
+        }
+
+        // Export to CSV
+        exportBtn.addEventListener('click', () => {
+            const csv = [
+                ['Patient Name', 'Doctor', 'Location'],
+                ...extractedData.map(row => [row.patientName, row.doctor, row.location])
+            ].map(row => row.map(cell => `"${cell}"`).join(',')).join('\n');
+
+            const blob = new Blob([csv], { type: 'text/csv' });
+            const url = URL.createObjectURL(blob);
+            const a = document.createElement('a');
+            a.href = url;
+            a.download = 'vsp-patient-data.csv';
+            a.click();
+            URL.revokeObjectURL(url);
+        });
+
+        // Utility functions
+        function showError(message) {
+            errorMessage.textContent = message;
+            errorMessage.classList.add('active');
+        }
+
+        function hideError() {
+            errorMessage.classList.remove('active');
+        }
+
+        function showSuccess(message) {
+            successMessage.textContent = message;
+            successMessage.classList.add('active');
+        }
+
+        function hideSuccess() {
+            successMessage.classList.remove('active');
+        }
+
+        function escapeHtml(text) {
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+    </script>
+</body>
+</html>
