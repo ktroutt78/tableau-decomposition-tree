@@ -257,12 +257,15 @@ Outputs built files to `docs/` with the correct GitHub Pages base path (`/tablea
 
 ### Deploying Updates
 
-```bash
-npm run build
-git add docs/
-git commit -m "Deploy: <description of change>"
-git push
-```
+**Important:** Tableau loads the built bundle from GitHub Pages. If you only push source changes and skip building + pushing `docs/`, the live extension will not update.
+
+1. Build the extension: `npm run build` (from `decomp_tree_v2/`)
+2. Commit **both** your source changes and the built output:
+   ```bash
+   git add decomp_tree_v2/   # includes src/ and docs/
+   git commit -m "Deploy: <description of change>"
+   git push origin main
+   ```
 
 GitHub Pages automatically picks up the updated `docs/` folder within ~60 seconds of the push.
 

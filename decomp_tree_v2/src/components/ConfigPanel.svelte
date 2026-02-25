@@ -262,14 +262,37 @@
 
       <div class="field-group">
         <span class="field-label" style="margin-bottom: var(--space-2); display: block">Link style</span>
-        <div class="segmented-control">
-          {#each [['curved','Curved'],['step','Step'],['straight','Straight']] as [val, label]}
-            <button
-              class="seg-btn seg-btn-sm"
-              class:active={draft.linkStyle === val}
-              on:click={() => draft.linkStyle = val}
-            >{label}</button>
-          {/each}
+        <div class="segmented-control" role="group" aria-label="Link style">
+          <button
+            class="seg-btn seg-btn-sm seg-btn-icon"
+            class:active={draft.linkStyle === 'curved'}
+            on:click={() => draft.linkStyle = 'curved'}
+            title="Curved"
+          >
+            <svg width="28" height="14" viewBox="0 0 28 14" fill="none" aria-hidden="true">
+              <path d="M2 12 Q14 0 26 12" stroke="currentColor" stroke-width="2" stroke-linecap="round" fill="none"/>
+            </svg>
+          </button>
+          <button
+            class="seg-btn seg-btn-sm seg-btn-icon"
+            class:active={draft.linkStyle === 'step'}
+            on:click={() => draft.linkStyle = 'step'}
+            title="Step"
+          >
+            <svg width="28" height="14" viewBox="0 0 28 14" fill="none" aria-hidden="true">
+              <path d="M2 10 H12 V4 H26" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-linejoin="round" fill="none"/>
+            </svg>
+          </button>
+          <button
+            class="seg-btn seg-btn-sm seg-btn-icon"
+            class:active={draft.linkStyle === 'straight'}
+            on:click={() => draft.linkStyle = 'straight'}
+            title="Straight"
+          >
+            <svg width="28" height="14" viewBox="0 0 28 14" fill="none" aria-hidden="true">
+              <line x1="2" y1="7" x2="26" y2="7" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+            </svg>
+          </button>
         </div>
       </div>
 
@@ -317,14 +340,37 @@
 
       <div class="field-group">
         <span class="field-label" style="margin-bottom: var(--space-2); display: block">Line type</span>
-        <div class="segmented-control">
-          {#each [['line','Line'],['dotted','Dotted'],['dashed','Dashed']] as [val, label]}
-            <button
-              class="seg-btn seg-btn-sm"
-              class:active={draft.linkStrokeType === val}
-              on:click={() => draft.linkStrokeType = val}
-            >{label}</button>
-          {/each}
+        <div class="segmented-control" role="group" aria-label="Line type">
+          <button
+            class="seg-btn seg-btn-sm seg-btn-icon"
+            class:active={draft.linkStrokeType === 'line'}
+            on:click={() => draft.linkStrokeType = 'line'}
+            title="Solid line"
+          >
+            <svg width="28" height="14" viewBox="0 0 28 14" fill="none" aria-hidden="true">
+              <line x1="2" y1="7" x2="26" y2="7" stroke="currentColor" stroke-width="2" stroke-linecap="round"/>
+            </svg>
+          </button>
+          <button
+            class="seg-btn seg-btn-sm seg-btn-icon"
+            class:active={draft.linkStrokeType === 'dotted'}
+            on:click={() => draft.linkStrokeType = 'dotted'}
+            title="Dotted"
+          >
+            <svg width="28" height="14" viewBox="0 0 28 14" fill="none" aria-hidden="true">
+              <line x1="2" y1="7" x2="26" y2="7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-dasharray="0 4"/>
+            </svg>
+          </button>
+          <button
+            class="seg-btn seg-btn-sm seg-btn-icon"
+            class:active={draft.linkStrokeType === 'dashed'}
+            on:click={() => draft.linkStrokeType = 'dashed'}
+            title="Dashed"
+          >
+            <svg width="28" height="14" viewBox="0 0 28 14" fill="none" aria-hidden="true">
+              <line x1="2" y1="7" x2="26" y2="7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-dasharray="5 3"/>
+            </svg>
+          </button>
         </div>
       </div>
     </section>
@@ -819,6 +865,14 @@
   .seg-btn-sm {
     padding: 5px var(--space-2);
     font-size: var(--text-xs);
+  }
+
+  .seg-btn-icon {
+    min-width: 36px;
+    padding: 6px;
+  }
+  .seg-btn-icon svg {
+    display: block;
   }
 
   /* Range inputs */
