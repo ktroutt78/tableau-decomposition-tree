@@ -533,10 +533,9 @@
     // TB: one header per unique depth row (posY = vertical); rendered at left.
     const headerMap = new Map(); // key: dataMain → { dim, dataMain, isLR, sortOrder }
     for (const d of nodes) {
-      if (!d.parent || !d.data._drillDimension || !d.data.children?.length) continue;
+      if (!d.parent || !d.data._drillDimension) continue;
       // No first-child-only restriction: if the first sibling was reset its
       // _drillDimension is null, so let any sibling register the header.
-      // Skip user-collapsed nodes (they keep _drillDimension but have no children).
       // headerMap deduplicates by position — first match wins.
       const dataMain = isLR ? posX(d) : posY(d);
       if (!headerMap.has(dataMain)) {
