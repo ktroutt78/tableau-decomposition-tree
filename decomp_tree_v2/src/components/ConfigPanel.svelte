@@ -181,19 +181,6 @@
       {/if}
 
       <div class="field-group">
-        <span class="field-label">Link Style</span>
-        <div class="seg-control" role="group" aria-label="Link Style">
-          {#each [['curved','Curved'],['step','Step'],['straight','Straight']] as [val, label]}
-            <button
-              class="seg-btn seg-btn-sm"
-              class:active={draft.linkStyle === val}
-              on:click={() => draft.linkStyle = val}
-            >{label}</button>
-          {/each}
-        </div>
-      </div>
-
-      <div class="field-group">
         <div class="range-header">
           <label class="field-label" for="levelSpacing">Level spacing</label>
           <span class="range-val">{draft.levelSpacing}px</span>
@@ -272,6 +259,19 @@
     <!-- ── Connectors ───────────────────────────────────── -->
     <section class="config-section">
       <h3 class="section-title">Connectors</h3>
+
+      <div class="field-group">
+        <span class="field-label" style="margin-bottom: var(--space-2); display: block">Link style</span>
+        <div class="segmented-control">
+          {#each [['curved','Curved'],['step','Step'],['straight','Straight']] as [val, label]}
+            <button
+              class="seg-btn seg-btn-sm"
+              class:active={draft.linkStyle === val}
+              on:click={() => draft.linkStyle = val}
+            >{label}</button>
+          {/each}
+        </div>
+      </div>
 
       <label class="color-picker-label" style="margin-bottom: var(--space-3)">
         <span class="field-label" style="margin-bottom:0">Inactive color</span>
