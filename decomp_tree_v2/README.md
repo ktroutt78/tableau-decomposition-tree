@@ -27,6 +27,22 @@ An interactive hierarchical decomposition tree built with Svelte and D3. Drop a 
 
 ---
 
+## About your measure (additive vs non-additive)
+
+The extension is **optimized for additive measures** — measures that can be summed across rows and still match the overall total.
+
+| Measure type | Examples | Root total behavior |
+|--------------|----------|----------------------|
+| **Additive** | SUM(Sales), SUM(Profit), COUNT(Orders) | Correct. The root shows the sum of the measure across all summary rows, which matches the total you’d see on a simple sheet. |
+| **Non-additive** | COUNTD(Profile Id), AVG(Rating), MEDIAN(Price) | The root is computed by **summing** the measure value across each summary row. For distinct count (COUNTD), that **overstates** the total (the same ID can appear in multiple slices). For AVG/MEDIAN, the root is not a true average or median. |
+
+**Recommendation:** Use **SUM**, **COUNT**, or other additive aggregations for the best experience. If you use COUNTD or another non-additive measure:
+
+- **Root total:** If Tableau sends a **grand-total row** (a row where all breakdown dimensions are empty), the extension uses that value and the root is correct. Tableau often does *not* send such a row for decomposition views, so the root may be too high (COUNTD) or otherwise not interpretable (AVG/MEDIAN). Treat the root as approximate or use the tree for **relative** comparison across slices rather than the absolute total.
+- **Drill-down nodes:** Child values and percentages are still correct for the slice they represent; only the root total is affected by the summing behavior.
+
+---
+
 ## Using the Extension
 
 ### Drilling Down
@@ -92,8 +108,8 @@ Open the settings panel with the ⚙ gear icon in the top-right corner. Settings
 ### Color Theme
 | Setting | Description | Default |
 |---|---|---|
-| Theme | Preset color palettes: Ocean, Forest, Amethyst, Sunset, Teal, Custom | Ocean |
-| Custom start / end | Start and end colors when Theme is set to Custom | — |
+| Theme | Preset color palettes: Cobalt, Ember, Ultraviolet, Sage, Slate, Custom | Cobalt |
+| Custom start / middle / end | Start, middle, and end colors when Theme is set to Custom (editable) | #164E63, #22D3EE, #DB2777 |
 | Apply gradient to bars | When on, bar colors are distributed across the theme gradient based on value rank. When off, all positive bars share a single solid color | On |
 | Negative value color | Fill color for bars with a negative value | Pink |
 
@@ -204,12 +220,9 @@ This extension is a static JavaScript application. Here is exactly what happens 
 3. **All computation is local** — The tree layout, aggregation, and rendering are performed by D3.js and Svelte running in Tableau's embedded Chromium process. Nothing is sent to an external server.
 4. **Settings are stored by Tableau** — Configuration is saved to the workbook via Tableau's own extension settings API (`tableau.extensions.settings`), not to any external service.
 
-### Root total and distinct count (COUNTD)
+### Root total (summary data)
 
-The root node shows a single total for your measure. Tableau sends the extension **summary data** (one row per combination of breakdown dimensions). The extension uses a **grand-total row** when Tableau includes one (a row where all breakdown dimensions are empty). If no such row exists, it **sums** the measure across all rows.
-
-- **Sum-type measures** (e.g. SUM(Sales)): Summing is correct and matches a simple sheet total.
-- **Distinct count** (e.g. COUNTD(Profiles)): Summing per-slice **overstates** the root total, because the same ID can appear in multiple slices. If your root total is higher than the same measure on a new sheet with the same filters, use a **single total row** in the data (e.g. a table with only the measure and no dimensions) if possible, or be aware the root is an upper bound. The extension will use a total row when Tableau sends one.
+The root node shows a single total for your measure. Tableau sends the extension **summary data** (one row per combination of breakdown dimensions). The extension uses a **grand-total row** when Tableau includes one (a row where all breakdown dimensions are empty). If no such row exists, it **sums** the measure across all rows. For more on additive vs non-additive measures (e.g. COUNTD), see [About your measure (additive vs non-additive)](#about-your-measure-additive-vs-non-additive) above.
 
 ### What GitHub Pages does and does not see
 

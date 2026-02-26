@@ -88,11 +88,11 @@
 
   // Color palette — start and end for per-sibling gradient interpolation
   const COLOR_THEMES = {
-    blue:   { start: '#5b8dee', end: '#1e3fa8' },
-    green:  { start: '#34c98e', end: '#0b7a4e' },
-    purple: { start: '#9b6dff', end: '#4a1aa8' },
-    orange: { start: '#ff8c4b', end: '#c44e00' },
-    teal:   { start: '#2eccc4', end: '#0d7a75' },
+    cobalt:      { start: '#1D4ED8', end: '#0F2A8A' },
+    ember:       { start: '#C94B1E', end: '#A03A18' },
+    ultraviolet: { start: '#5B21B6', end: '#4C1D95' },
+    sage:        { start: '#3D6B52', end: '#2D5A42' },
+    slate:       { start: '#334155', end: '#1E293B' },
   };
   const BAR_BG_COLOR = '#e2e8f0'; // gray track
 
@@ -224,10 +224,10 @@
 
     const BAR_R    = cfg.barRadius ?? 4;
     const negColor = cfg.negativeColor || '#f472b6';
-    const theme     = COLOR_THEMES[cfg.colorTheme] || COLOR_THEMES.blue;
-    const startColor = cfg.colorTheme === 'custom' ? (cfg.customColorStart || '#5b8dee') : theme.start;
+    const theme     = COLOR_THEMES[cfg.colorTheme] || COLOR_THEMES.cobalt;
+    const startColor = cfg.colorTheme === 'custom' ? (cfg.customColorStart || '#164E63') : theme.start;
     const middleColor = cfg.colorTheme === 'custom' ? (cfg.customColorMiddle || null) : null;
-    const endColor   = cfg.colorTheme === 'custom' ? (cfg.customColorEnd   || startColor) : theme.end;
+    const endColor   = cfg.colorTheme === 'custom' ? (cfg.customColorEnd   || '#DB2777') : theme.end;
     const colorInterp = (t) => {
       if (cfg.colorTheme === 'custom' && middleColor) {
         if (t <= 0.5) return d3.interpolateRgb(startColor, middleColor)(t * 2);
@@ -559,9 +559,9 @@
 
   // Returns the start color for the current color theme — used for active link color.
   function getActiveColor(cfg) {
-    const theme = COLOR_THEMES[cfg.colorTheme] || COLOR_THEMES.blue;
+    const theme = COLOR_THEMES[cfg.colorTheme] || COLOR_THEMES.cobalt;
     return cfg.colorTheme === 'custom'
-      ? (cfg.customColorStart || '#5b8dee')
+      ? (cfg.customColorStart || '#164E63')
       : theme.start;
   }
 

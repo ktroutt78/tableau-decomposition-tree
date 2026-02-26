@@ -6,12 +6,12 @@
   let draft = { ...defaultConfig, ...$config };
 
   const colorThemes = [
-    { id: 'blue',   label: 'Ocean',    start: '#5b8dee', end: '#1e3fa8' },
-    { id: 'green',  label: 'Forest',   start: '#34c98e', end: '#0b7a4e' },
-    { id: 'purple', label: 'Amethyst', start: '#9b6dff', end: '#4a1aa8' },
-    { id: 'orange', label: 'Sunset',   start: '#ff8c4b', end: '#c44e00' },
-    { id: 'teal',   label: 'Teal',     start: '#2eccc4', end: '#0d7a75' },
-    { id: 'custom', label: 'Custom',   start: null,       end: null }
+    { id: 'cobalt',      label: 'Cobalt',      start: '#1D4ED8', end: '#0F2A8A' },
+    { id: 'ember',      label: 'Ember',       start: '#C94B1E', end: '#A03A18' },
+    { id: 'ultraviolet', label: 'Ultraviolet', start: '#5B21B6', end: '#4C1D95' },
+    { id: 'sage',       label: 'Sage',        start: '#3D6B52', end: '#2D5A42' },
+    { id: 'slate',      label: 'Slate',       start: '#334155', end: '#1E293B' },
+    { id: 'custom',     label: 'Custom',      start: '#164E63', middle: '#22D3EE', end: '#DB2777' }
   ];
 
   async function apply() {
@@ -70,7 +70,7 @@
             on:click={() => draft.colorTheme = theme.id}
             style={theme.id !== 'custom'
               ? `background: linear-gradient(135deg, ${theme.start}, ${theme.end})`
-              : `background: conic-gradient(#f00, #ff0, #0f0, #0ff, #00f, #f0f, #f00)`}
+              : `background: linear-gradient(135deg, ${theme.start}, ${theme.middle}, ${theme.end})`}
           >
             {#if draft.colorTheme === theme.id}
               <svg width="12" height="12" viewBox="0 0 12 12">
