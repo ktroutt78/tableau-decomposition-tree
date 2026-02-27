@@ -225,9 +225,9 @@
     const BAR_R    = cfg.barRadius ?? 4;
     const negColor = cfg.negativeColor || '#f472b6';
     const theme     = COLOR_THEMES[cfg.colorTheme] || COLOR_THEMES.cobalt;
-    const startColor = cfg.colorTheme === 'custom' ? (cfg.customColorStart || '#164E63') : theme.start;
-    const middleColor = cfg.colorTheme === 'custom' ? (cfg.customColorMiddle || null) : null;
-    const endColor   = cfg.colorTheme === 'custom' ? (cfg.customColorEnd   || '#DB2777') : theme.end;
+    const startColor = (cfg.colorTheme === 'custom' ? (cfg.customColorStart || '#164E63') : theme.start).toString().toLowerCase();
+    const middleColor = cfg.colorTheme === 'custom' ? (cfg.customColorMiddle || '').toString().toLowerCase() || null : null;
+    const endColor   = (cfg.colorTheme === 'custom' ? (cfg.customColorEnd   || '#DB2777') : theme.end).toString().toLowerCase();
     const colorInterp = (t) => {
       if (cfg.colorTheme === 'custom' && middleColor) {
         if (t <= 0.5) return d3.interpolateRgb(startColor, middleColor)(t * 2);
@@ -236,17 +236,20 @@
       return d3.interpolateRgb(startColor, endColor)(t);
     };
 
+    // Coerce useGradient to boolean (saved config can be string)
+    const useGradient = cfg.useGradient !== false && cfg.useGradient !== 'false';
+
     // Returns a color for a node based on its position among siblings.
     // When useGradient is off, all positive bars share the start color.
     // Default themes: largest (idx=0) → darkest; Custom: largest → first color chosen.
     const isCustom = cfg.colorTheme === 'custom';
     function posColor(d) {
-      if (!cfg.useGradient) return colorInterp(isCustom ? 0 : 1);
+      if (!useGradient) return colorInterp(isCustom ? 0 : 1);
       if (!d.parent || !d.parent.children || d.parent.children.length <= 1) {
         return colorInterp(isCustom ? 0 : 1);
       }
       const siblings = d.parent.children;
-      const t = siblings.indexOf(d) / (siblings.length - 1);
+      const t = siblings.indexOf(d) / Math.max(1, siblings.length - 1);
       return colorInterp(isCustom ? t : 1 - t);
     }
 
@@ -417,10 +420,11 @@
       .attr('rx', BAR_R)
       .attr('fill', BAR_BG_COLOR);
 
-    // Bar fill: LR animates width; TB animates height+y (grows upward from bar bottom)
+    // Bar fill: set color immediately so gradient is correct; animate size with transition
     nodeUpdate.select('.bar-fill')
       .attr('x',  isLR ? -nw / 2 : -TB_BAR_W / 2)
       .attr('rx', BAR_R)
+      .attr('fill', d => d.data.value >= 0 ? posColor(d) : negColor)
       .transition(tFill)
       .attr('width', d => {
         const pct = barPct(d);
@@ -433,8 +437,7 @@
       .attr('y', d => {
         const pct = barPct(d);
         return isLR ? barTopY : TB_BAR_BOT - TB_BAR_MAX_H * pct / 100;
-      })
-      .attr('fill', d => d.data.value >= 0 ? posColor(d) : negColor);
+      });
 
     // Label line 1:
     //   root  → measure name/alias only (% is always 100%, never shown)
