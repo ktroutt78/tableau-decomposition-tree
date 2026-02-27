@@ -5,6 +5,7 @@
 
   import { tooltipFieldNames, encodingMap } from '../stores/encodings.js';
   import { config } from '../stores/config.js';
+  import { resolvedMeasureDisplayName } from '../stores/treeState.js';
   import { formatValue } from '../lib/formatters.js';
 
   $: adjustedX = x + 248 > (window?.innerWidth ?? 9999) ? x - 260 : x;
@@ -20,7 +21,7 @@
     vals['value']   = formatValue(node.value, $config);
     vals['pct']     = node.depth > 0 ? `${node.percentOfParent?.toFixed(1)}%` : '100%';
     vals['count']   = node.count?.toLocaleString() ?? '';
-    vals['measure'] = $config.measureAlias?.trim() || $encodingMap.value?.[0]?.name || 'Value';
+    vals['measure'] = $resolvedMeasureDisplayName || $encodingMap.value?.[0]?.name || 'Value';
     // Dimension path values
     for (const { field, value } of node.dimensionPath || []) {
       vals[field] = value;

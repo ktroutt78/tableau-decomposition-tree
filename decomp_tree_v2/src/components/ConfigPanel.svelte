@@ -443,10 +443,11 @@
         <input
           id="measureAlias"
           type="text"
-          placeholder="e.g. Profit (leave blank to use field name)"
+          placeholder="e.g. Profit or =[Field Name] for dynamic"
           bind:value={draft.measureAlias}
           class="text-input"
         />
+        <span class="field-hint">Static text, or <code>=Field Name</code> to use a calculated field or parameter from the view (field must be on the worksheet, e.g. Tooltip or Detail).</span>
       </div>
     </section>
 

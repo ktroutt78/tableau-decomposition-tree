@@ -1,4 +1,28 @@
 /**
+ * Resolve the measure display name: if measureAlias starts with "=", treat the rest as a
+ * field name and use its value from the first summary row (e.g. from a Tableau parameter or
+ * calculated field on the view). Otherwise return the alias or rawName.
+ * @param {string} measureAlias - From config (may be "=Field Name" for dynamic)
+ * @param {Array<object>} summaryRows - From getSummaryData; rows keyed by field name
+ * @param {string} rawName - Fallback when alias is empty or field lookup fails
+ * @returns {string}
+ */
+export function resolveMeasureDisplayName(measureAlias, summaryRows, rawName = 'Value') {
+  const alias = (measureAlias ?? '').trim();
+  if (!alias) return rawName || 'Value';
+  if (alias.startsWith('=')) {
+    const fieldName = alias.slice(1).trim();
+    if (!fieldName) return rawName || 'Value';
+    const row = summaryRows?.[0];
+    if (!row || !(fieldName in row)) return rawName || 'Value';
+    const raw = row[fieldName];
+    const v = raw != null && typeof raw === 'object' && 'value' in raw ? raw.value : raw;
+    if (v != null && String(v).trim() !== '') return String(v).trim();
+  }
+  return alias;
+}
+
+/**
  * Detect Tableau's native value format by sampling formattedValue strings from
  * the first non-trivial row. Returns { type, symbol, decimals } or null.
  */

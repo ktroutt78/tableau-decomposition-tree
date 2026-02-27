@@ -2,7 +2,7 @@
   import { onMount } from 'svelte';
   import { get } from 'svelte/store';
   import * as d3 from 'd3';
-  import { treeRoot, pendingDrillNode, statusMessage, selectedNodeInfo } from '../stores/treeState.js';
+  import { treeRoot, pendingDrillNode, statusMessage, selectedNodeInfo, resolvedMeasureDisplayName } from '../stores/treeState.js';
   import { selectMarksForFilter, clearMarkSelection } from '../lib/tableau.js';
   import { config, saveConfig } from '../stores/config.js';
   import { encodingMap } from '../stores/encodings.js';
@@ -126,14 +126,14 @@
       const root = get(treeRoot);
       if (!root || !mainGroup) return;
       const cfg = get(config);
-      const rawName = get(encodingMap).value?.[0]?.name ?? 'Value';
-      const vName = cfg.measureAlias?.trim() || rawName;
+      const vName = get(resolvedMeasureDisplayName);
       renderTree(root, cfg, vName);
       doFitToView(root, cfg);
     };
 
     const unsubRoot     = treeRoot.subscribe(redraw);
     const unsubConfig   = config.subscribe(redraw);
+    const unsubResolved = resolvedMeasureDisplayName.subscribe(redraw);
     const unsubSelected = selectedNodeInfo.subscribe(() => {
       if (!svgEl) return;
       const sel = get(selectedNodeInfo);
@@ -153,7 +153,7 @@
         .attr('stroke-linecap', resolveLinkStrokeLinecap(cfg));
     });
 
-    return () => { unsubRoot(); unsubConfig(); unsubSelected(); };
+    return () => { unsubRoot(); unsubConfig(); unsubSelected(); unsubResolved(); };
   });
 
   // Split `text` into lines that fit within `maxWidth` pixels (approximate char-width method).
