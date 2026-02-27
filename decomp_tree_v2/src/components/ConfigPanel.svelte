@@ -6,11 +6,11 @@
   let draft = { ...defaultConfig, ...$config };
 
   const colorThemes = [
-    { id: 'cobalt',      label: 'Cobalt',      start: '#1D4ED8', end: '#0F2A8A' },
-    { id: 'ember',      label: 'Ember',       start: '#C94B1E', end: '#A03A18' },
-    { id: 'ultraviolet', label: 'Ultraviolet', start: '#5B21B6', end: '#4C1D95' },
-    { id: 'sage',       label: 'Sage',        start: '#3D6B52', end: '#2D5A42' },
-    { id: 'slate',      label: 'Slate',       start: '#334155', end: '#1E293B' },
+    { id: 'cobalt',      label: 'Cobalt',      start: '#93C5FD', end: '#1D4ED8' },
+    { id: 'ember',      label: 'Ember',       start: '#FDBA74', end: '#C94B1E' },
+    { id: 'ultraviolet', label: 'Ultraviolet', start: '#C4B5FD', end: '#5B21B6' },
+    { id: 'sage',       label: 'Sage',        start: '#6EE7B7', end: '#3D6B52' },
+    { id: 'slate',      label: 'Slate',       start: '#94A3B8', end: '#334155' },
     { id: 'custom',     label: 'Custom',      start: '#164E63', middle: '#22D3EE', end: '#DB2777' }
   ];
 

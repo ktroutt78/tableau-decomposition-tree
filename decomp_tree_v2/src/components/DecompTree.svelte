@@ -86,13 +86,13 @@
     node.children.forEach(c => topAlignHier(c, isLR));
   }
 
-  // Color palette — start and end for per-sibling gradient interpolation
+  // Color palette — start (lightest, for smallest bar) and end (darkest, for largest bar) for per-sibling gradient
   const COLOR_THEMES = {
-    cobalt:      { start: '#1D4ED8', end: '#0F2A8A' },
-    ember:       { start: '#C94B1E', end: '#A03A18' },
-    ultraviolet: { start: '#5B21B6', end: '#4C1D95' },
-    sage:        { start: '#3D6B52', end: '#2D5A42' },
-    slate:       { start: '#334155', end: '#1E293B' },
+    cobalt:      { start: '#93C5FD', end: '#1D4ED8' },
+    ember:       { start: '#FDBA74', end: '#C94B1E' },
+    ultraviolet: { start: '#C4B5FD', end: '#5B21B6' },
+    sage:        { start: '#6EE7B7', end: '#3D6B52' },
+    slate:       { start: '#94A3B8', end: '#334155' },
   };
   const BAR_BG_COLOR = '#e2e8f0'; // gray track
 
@@ -239,17 +239,24 @@
     // Coerce useGradient to boolean (saved config can be string)
     const useGradient = cfg.useGradient !== false && cfg.useGradient !== 'false';
 
-    // Returns a color for a node based on its position among siblings.
-    // When useGradient is off, all positive bars share the start color.
-    // Default themes: largest (idx=0) → darkest; Custom: largest → first color chosen.
+    // (Other) = grouping of children not displayed (overflow when > maxChildrenShown). Always light grey.
+    const OTHER_NODE_COLOR = '#94a3b8';
+    const isOtherNode = (d) => (d.data?.label ?? '').trim() === '(Other)';
+
+    // Returns a color for a node based on value rank among siblings: largest value = darkest, smallest = lightest.
     const isCustom = cfg.colorTheme === 'custom';
     function posColor(d) {
+      if (isOtherNode(d)) return OTHER_NODE_COLOR;
       if (!useGradient) return colorInterp(isCustom ? 0 : 1);
       if (!d.parent || !d.parent.children || d.parent.children.length <= 1) {
         return colorInterp(isCustom ? 0 : 1);
       }
       const siblings = d.parent.children;
-      const t = siblings.indexOf(d) / Math.max(1, siblings.length - 1);
+      // Sort by absolute value descending so index 0 = largest
+      const byValue = [...siblings].sort((a, b) => Math.abs(b.data.value ?? 0) - Math.abs(a.data.value ?? 0));
+      const rank = byValue.findIndex(n => n === d);
+      if (rank < 0) return colorInterp(isCustom ? 0 : 1);
+      const t = rank / Math.max(1, siblings.length - 1);
       return colorInterp(isCustom ? t : 1 - t);
     }
 
