@@ -239,14 +239,14 @@
     // Coerce useGradient to boolean (saved config can be string)
     const useGradient = cfg.useGradient !== false && cfg.useGradient !== 'false';
 
-    // (Other) = grouping of children not displayed (overflow when > maxChildrenShown). Always light grey.
-    const OTHER_NODE_COLOR = '#94a3b8';
+    // (Other) = grouping of children not displayed (overflow when > maxChildrenShown).
     const isOtherNode = (d) => (d.data?.label ?? '').trim() === '(Other)';
+    const otherNodeColor = cfg.colorTheme === 'slate' ? '#0d9488' : '#94a3b8'; // teal for Slate; light grey for others
 
     // Returns a color for a node based on value rank among siblings: largest value = darkest, smallest = lightest.
     const isCustom = cfg.colorTheme === 'custom';
     function posColor(d) {
-      if (isOtherNode(d)) return OTHER_NODE_COLOR;
+      if (isOtherNode(d)) return otherNodeColor;
       if (!useGradient) return colorInterp(isCustom ? 0 : 1);
       if (!d.parent || !d.parent.children || d.parent.children.length <= 1) {
         return colorInterp(isCustom ? 0 : 1);
