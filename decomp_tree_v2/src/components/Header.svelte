@@ -1,6 +1,7 @@
 <script>
-  import { treeRoot, statusMessage, configPanelOpen } from '../stores/treeState.js';
+  import { treeRoot, statusMessage, configPanelOpen, resolvedMeasureDisplayName } from '../stores/treeState.js';
   import { config } from '../stores/config.js';
+  import { encodingMap } from '../stores/encodings.js';
   import { reloadData, saveExpansionState, clearExpansionState } from '../lib/tableau.js';
   import { getDeepestExpandedNode, serializeExpansion } from '../lib/treeEngine.js';
 
@@ -36,6 +37,12 @@
     if (lastDim) segments.push(`by ${lastDim}`);
     return segments.length ? segments.join(' > ') : null;
   })();
+
+  // When no drill path, show Ready + resolved measure name (alias) so breadcrumb updates when alias changes
+  $: defaultStatus =
+    $treeRoot && !breadcrumb
+      ? `Ready — ${$resolvedMeasureDisplayName || 'Value'} | ${($encodingMap.breakdown || []).length} breakdown dimension${($encodingMap.breakdown || []).length !== 1 ? 's' : ''}`
+      : $statusMessage;
 </script>
 
 <header class="app-header">
@@ -57,7 +64,7 @@
     </div>
     <span class="app-title">Decomposition Tree</span>
     <span class="header-divider">|</span>
-    <span class="status-text" title={breadcrumb || $statusMessage}>{breadcrumb ?? $statusMessage}</span>
+    <span class="status-text" title={breadcrumb || defaultStatus}>{breadcrumb ?? defaultStatus}</span>
   </div>
 
   <div class="header-right">

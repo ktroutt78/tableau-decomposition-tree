@@ -5,7 +5,7 @@
   import { treeRoot, statusMessage, configPanelOpen, summaryRows } from './stores/treeState.js';
   import { encodingMap } from './stores/encodings.js';
   import { buildRootNode, reapplyExpansion, replayExpansion } from './lib/treeEngine.js';
-  import { detectValueFormat } from './lib/formatters.js';
+  import { detectValueFormat, resolveMeasureDisplayName } from './lib/formatters.js';
   import { config } from './stores/config.js';
   import { get } from 'svelte/store';
 
@@ -64,7 +64,8 @@
     const root = get(treeRoot);
     if (root) {
       const dims = (encMap.breakdown || []).length;
-      const valName = newValueName ?? '(none)';
+      const displayName = resolveMeasureDisplayName(get(config).measureAlias, rows, newValueName ?? 'Value');
+      const valName = displayName || (newValueName ?? '(none)');
       statusMessage.set(`Ready — ${valName} | ${dims} breakdown dimension${dims !== 1 ? 's' : ''}`);
     } else {
       statusMessage.set('Drop a measure onto the Measure shelf to begin');
