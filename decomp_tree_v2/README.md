@@ -111,7 +111,7 @@ Open the settings panel with the ⚙ gear icon in the top-right corner. Settings
 | Theme | Preset color palettes: Cobalt, Ember, Ultraviolet, Sage, Slate, Custom | Cobalt |
 | Custom start / middle / end | Start, middle, and end colors when Theme is set to Custom (editable) | #164E63, #22D3EE, #DB2777 |
 | Apply gradient to bars | When on, bar colors are distributed across the theme gradient based on value rank. When off, all positive bars share a single solid color | On |
-| Negative value color | Fill color for bars with a negative value | Pink |
+| Negative value color | Color for negative-value bars and connector lines (one setting for both) | Red (#dc2626) |
 
 **Gradient color behavior:**
 - **Preset themes** — the largest value bar gets the darkest shade; bars graduate to the lightest shade as values decrease
@@ -135,7 +135,6 @@ Open the settings panel with the ⚙ gear icon in the top-right corner. Settings
 | Setting | Description | Default |
 |---|---|---|
 | Inactive color | Stroke color for links not on the active selection or expansion path | Gray |
-| Negative node color | Stroke color for links leading to nodes with a negative value | Pink |
 | Opacity | Overall link opacity | 90% |
 
 ### Display

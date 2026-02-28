@@ -223,7 +223,7 @@
     }
 
     const BAR_R    = cfg.barRadius ?? 4;
-    const negColor = cfg.negativeColor || '#f472b6';
+    const negColor = cfg.negativeColor || '#dc2626';
     const theme     = COLOR_THEMES[cfg.colorTheme] || COLOR_THEMES.cobalt;
     const startColor = (cfg.colorTheme === 'custom' ? (cfg.customColorStart || '#164E63') : theme.start).toString().toLowerCase();
     const middleColor = cfg.colorTheme === 'custom' ? (cfg.customColorMiddle || '').toString().toLowerCase() || null : null;
@@ -514,7 +514,7 @@
       .attr('cy', isLR ? barCY : TB_EXPAND_CY)
       .attr('visibility', d => showExpand(d) ? 'visible' : 'hidden')
       .transition(tFill)
-      .attr('fill', d => isExpanded(d) ? '#94a3b8' : posColor(d));
+      .attr('fill', d => isExpanded(d) ? '#94a3b8' : '#000000');
 
     nodeUpdate.select('.expand-icon')
       .attr('x', isLR ? nw / 2 + EXPAND_R + 2 : 0)
@@ -612,7 +612,7 @@
   function resolveLinkColor(link, sel, cfg) {
     if (!isLinkActive(link, sel)) return cfg.linkColorInactive || '#94a3b8';
     return link.target.data.value < 0
-      ? (cfg.linkColorNegative || '#f472b6')
+      ? (cfg.negativeColor || '#dc2626')
       : getActiveColor(cfg);
   }
 

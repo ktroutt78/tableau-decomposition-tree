@@ -128,6 +128,7 @@
           <input type="color" bind:value={draft.negativeColor} class="color-input" />
           <span class="color-hex">{draft.negativeColor}</span>
         </div>
+        <span class="field-hint">Used for negative bars and connector lines. One setting for both.</span>
       </label>
     </section>
 
@@ -285,14 +286,6 @@
         <div class="color-pick-row">
           <input type="color" bind:value={draft.linkColorInactive} class="color-input" />
           <span class="color-hex">{draft.linkColorInactive}</span>
-        </div>
-      </label>
-
-      <label class="color-picker-label" style="margin-bottom: var(--space-3)">
-        <span class="field-label" style="margin-bottom:0">Negative node color</span>
-        <div class="color-pick-row">
-          <input type="color" bind:value={draft.linkColorNegative} class="color-input" />
-          <span class="color-hex">{draft.linkColorNegative}</span>
         </div>
       </label>
 
