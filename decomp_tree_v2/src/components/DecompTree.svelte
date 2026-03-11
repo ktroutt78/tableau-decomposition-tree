@@ -522,17 +522,19 @@
       return dimsUsed < totalBreakdownDims;
     };
 
+    const expandActiveColor = getActiveColor(cfg);
     nodeUpdate.select('.expand-circle')
       .attr('cx', isLR ? nw / 2 + EXPAND_R + 2 : 0)
       .attr('cy', isLR ? barCY : TB_EXPAND_CY)
       .attr('visibility', d => showExpand(d) ? 'visible' : 'hidden')
       .transition(tFill)
-      .attr('fill', d => isExpanded(d) ? '#94a3b8' : '#000000');
+      .attr('fill', d => isExpanded(d) ? '#94a3b8' : expandActiveColor);
 
     nodeUpdate.select('.expand-icon')
       .attr('x', isLR ? nw / 2 + EXPAND_R + 2 : 0)
       .attr('y', isLR ? barCY + 5 : TB_EXPAND_CY + 5)
       .attr('visibility', d => showExpand(d) ? 'visible' : 'hidden')
+      .style('fill', 'white')
       .text(d => isExpanded(d) ? '−' : '+');
 
     // Dim sibling nodes when a selection is active
@@ -1271,7 +1273,7 @@
     <div class="drill-hint" style="left:{sx}px; top:{sy + 14}px">
       <span>Click</span>
       <svg width="20" height="20" viewBox="0 0 20 20" style="flex-shrink:0; vertical-align:middle">
-        <circle cx="10" cy="10" r="10" fill="#5b8dee"/>
+        <circle cx="10" cy="10" r="10" fill={getActiveColor($config)}/>
         <text x="10" y="15" text-anchor="middle" fill="white" font-size="16" font-weight="700" font-family="system-ui, sans-serif">+</text>
       </svg>
       <span>to drill into an attribute</span>
@@ -1312,7 +1314,7 @@
           <li>
             <span class="help-chip">
               <svg width="16" height="16" viewBox="0 0 20 20">
-                <circle cx="10" cy="10" r="10" fill="#5b8dee"/>
+                <circle cx="10" cy="10" r="10" fill={getActiveColor($config)}/>
                 <text x="10" y="15" text-anchor="middle" fill="white" font-size="16" font-weight="700" font-family="system-ui">+</text>
               </svg>
             </span>
@@ -1815,13 +1817,13 @@
   }
 
   .help-chip--bar {
-    background: linear-gradient(90deg, #5b8dee 52%, #e2e8f0 52%);
-    border-color: #c7d7f9;
+    background: linear-gradient(90deg, var(--color-accent) 52%, var(--color-border) 52%);
+    border-color: var(--color-accent-subtle);
   }
 
   .help-chip--header {
-    background: white;
-    color: #334155;
+    background: var(--color-surface);
+    color: var(--color-text-primary);
     font-size: 10px;
   }
 

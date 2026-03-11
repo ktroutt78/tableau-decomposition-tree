@@ -189,7 +189,7 @@
   .btn-ghost:hover {
     background: var(--color-bg);
     color: var(--color-text-primary);
-    border-color: #c0c4cc;
+    border-color: var(--color-text-muted);
   }
 
   .btn-icon-round {
