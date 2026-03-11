@@ -2,7 +2,7 @@
   import { onMount } from 'svelte';
   import { get } from 'svelte/store';
   import * as d3 from 'd3';
-  import { treeRoot, pendingDrillNode, statusMessage, selectedNodeInfo, resolvedMeasureDisplayName } from '../stores/treeState.js';
+  import { treeRoot, pendingDrillNode, statusMessage, selectedNodeInfo, resolvedMeasureDisplayName, configPanelOpen } from '../stores/treeState.js';
   import { selectMarksForFilter, clearMarkSelection } from '../lib/tableau.js';
   import { config, saveConfig } from '../stores/config.js';
   import { encodingMap } from '../stores/encodings.js';
@@ -190,6 +190,12 @@
 
   function renderTree(rootData, cfg, valueName) {
     if (!mainGroup || !rootData) return;
+    // Compute from cfg directly — avoids timing race with module-level $: isDarkBg
+    // (config.subscribe fires synchronously before Svelte's reactive cycle updates isDarkBg)
+    const hex = (cfg.bgColor || '#ffffff').replace('#', '');
+    const isDarkBg = hex.length === 6
+      ? (0.299 * parseInt(hex.slice(0, 2), 16) + 0.587 * parseInt(hex.slice(2, 4), 16) + 0.114 * parseInt(hex.slice(4, 6), 16)) < 128
+      : false;
     BAR_BG_COLOR = isDarkBg ? '#334155' : '#e2e8f0';
 
     const isLR     = cfg.orientation === 'LR';
@@ -1274,6 +1280,20 @@
 
   <!-- Help button + panel — upper right corner -->
   <div class="help-widget">
+    {#if !$config.showHeader}
+      <button
+        class="help-btn"
+        on:click|stopPropagation={() => configPanelOpen.set(true)}
+        title="Settings"
+        aria-label="Open settings"
+      >
+        <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
+          <circle cx="8" cy="8" r="2.5" stroke="currentColor" stroke-width="1.5"/>
+          <path d="M8 1v1.5M8 13.5V15M15 8h-1.5M2.5 8H1M12.36 3.64l-1.06 1.06M4.7 11.3l-1.06 1.06M12.36 12.36l-1.06-1.06M4.7 4.7L3.64 3.64"
+            stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+        </svg>
+      </button>
+    {/if}
     <button
       class="help-btn"
       class:help-btn-open={helpOpen}
@@ -1698,6 +1718,8 @@
     top: 16px;
     right: 16px;
     z-index: 20;
+    display: flex;
+    gap: 6px;
   }
 
   .help-btn {

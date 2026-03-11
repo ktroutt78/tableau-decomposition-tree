@@ -118,21 +118,6 @@
 <div class="app-shell" style={shellStyle}>
   {#if $config.showHeader}<Header />{/if}
 
-  {#if !$config.showHeader}
-    <button
-      class="floating-settings"
-      on:click={() => configPanelOpen.set(true)}
-      title="Settings"
-      aria-label="Open settings"
-    >
-      <svg width="14" height="14" viewBox="0 0 16 16" fill="none">
-        <circle cx="8" cy="8" r="2.5" stroke="currentColor" stroke-width="1.5"/>
-        <path d="M8 1v1.5M8 13.5V15M15 8h-1.5M2.5 8H1M12.36 3.64l-1.06 1.06M4.7 11.3l-1.06 1.06M12.36 12.36l-1.06-1.06M4.7 4.7L3.64 3.64"
-          stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
-      </svg>
-    </button>
-  {/if}
-
   <main class="viz-area">
     {#if $isReadyToRender && $treeRoot}
       <DecompTree />
@@ -163,28 +148,5 @@
     min-height: 0;
   }
 
-  .floating-settings {
-    position: absolute;
-    top: 8px;
-    right: 8px;
-    z-index: var(--z-header);
-    width: 28px;
-    height: 28px;
-    border-radius: var(--radius-md);
-    display: flex;
-    align-items: center;
-    justify-content: center;
-    color: var(--color-text-secondary);
-    background: var(--color-surface);
-    border: 1px solid var(--color-border);
-    opacity: 0.35;
-    transition: opacity var(--transition-fast);
-    cursor: pointer;
-  }
 
-  .floating-settings:hover {
-    opacity: 1;
-    color: var(--color-accent);
-    border-color: var(--color-accent);
-  }
 </style>
