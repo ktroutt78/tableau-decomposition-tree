@@ -185,4 +185,5 @@
     font-size: var(--text-xs);
     color: var(--color-text-primary);
   }
+
 </style>

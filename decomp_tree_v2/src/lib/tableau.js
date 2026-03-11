@@ -200,6 +200,95 @@ export async function clearMarkSelection() {
   }
 }
 
+/**
+ * Apply a categorical exclude filter to the host worksheet.
+ * Adds `value` to the exclusion filter for `fieldName` on the Tableau filter shelf.
+ * No-op in mock/dev mode.
+ * @param {string} fieldName - Tableau field name (fieldName property from encodingMap)
+ * @param {string} value - The member value to exclude
+ */
+export async function applyExcludeFilter(fieldName, value) {
+  if (typeof tableau === 'undefined') return; // dev/mock mode — no-op
+  const ws = tableau.extensions.worksheetContent?.worksheet;
+  if (!ws) {
+    console.warn('[DecompTree] applyExcludeFilter: worksheet not available');
+    return;
+  }
+  try {
+    // Read existing filters to merge — prevents replacing a previous exclusion
+    const existing = await ws.getFiltersAsync();
+    const existingExclude = existing.find(
+      f => f.fieldName === fieldName && f.isExcludeMode
+    );
+    const currentExcluded = existingExclude
+      ? existingExclude.appliedValues.map(v => v.formattedValue ?? v.value)
+      : [];
+    const merged = [...new Set([...currentExcluded, value])];
+    console.log(`[DecompTree] applyExcludeFilter: ${fieldName} excluding`, merged);
+    await ws.applyFilterAsync(
+      fieldName,
+      merged,
+      tableau.FilterUpdateType.Replace,
+      { isExcludeMode: true }
+    );
+    console.log(`[DecompTree] Exclude filter applied: ${fieldName} != "${value}"`);
+  } catch (e) {
+    console.warn('[DecompTree] applyExcludeFilter failed:', e);
+  }
+}
+
+/**
+ * Return all currently active exclusion filter values on the worksheet.
+ * Returns an array of { fieldName, value } objects.
+ */
+export async function getActiveExclusions() {
+  if (typeof tableau === 'undefined') return [];
+  const ws = tableau.extensions.worksheetContent?.worksheet;
+  if (!ws) return [];
+  try {
+    const filters = await ws.getFiltersAsync();
+    const result = [];
+    for (const f of filters) {
+      if (f.isExcludeMode && f.appliedValues?.length > 0) {
+        for (const v of f.appliedValues) {
+          result.push({ fieldName: f.fieldName, value: v.formattedValue ?? v.value });
+        }
+      }
+    }
+    return result;
+  } catch (e) {
+    console.warn('[DecompTree] getActiveExclusions failed:', e);
+    return [];
+  }
+}
+
+/**
+ * Remove a single value from an exclusion filter.
+ * If it was the last excluded value for that field, removes the filter entirely.
+ */
+export async function removeExclusionValue(fieldName, value) {
+  if (typeof tableau === 'undefined') return;
+  const ws = tableau.extensions.worksheetContent?.worksheet;
+  if (!ws) return;
+  try {
+    const filters = await ws.getFiltersAsync();
+    const existing = filters.find(f => f.fieldName === fieldName && f.isExcludeMode);
+    if (!existing) return;
+    const remaining = existing.appliedValues
+      .map(v => v.formattedValue ?? v.value)
+      .filter(v => v !== value);
+    if (remaining.length === 0) {
+      // No exclusions left — remove the filter entirely
+      await ws.applyFilterAsync(fieldName, [], tableau.FilterUpdateType.All);
+    } else {
+      await ws.applyFilterAsync(fieldName, remaining, tableau.FilterUpdateType.Replace, { isExcludeMode: true });
+    }
+    console.log(`[DecompTree] Removed exclusion: ${fieldName} != "${value}"`);
+  } catch (e) {
+    console.warn('[DecompTree] removeExclusionValue failed:', e);
+  }
+}
+
 // --- Expansion state persistence (EBL-013) ---
 
 const EXPANSION_SETTINGS_KEY = 'expansion_v1';

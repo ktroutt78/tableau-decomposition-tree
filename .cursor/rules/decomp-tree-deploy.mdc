@@ -1,0 +1,28 @@
+---
+description: Deploy decomp_tree_v2 Tableau extension to GitHub (build + push docs)
+globs: decomp_tree_v2/**/*
+alwaysApply: false
+---
+
+# Decomp Tree V2 — Deploy to GitHub
+
+When you change the Tableau extension in `decomp_tree_v2/` (source, config, or UI), the **live extension** is what Tableau loads from GitHub Pages. Source changes alone are not enough.
+
+## Required steps after editing decomp_tree_v2
+
+1. **Build** the extension so the bundle and `docs/` are updated:
+   ```bash
+   cd decomp_tree_v2 && npm run build
+   ```
+
+2. **Commit** both the source changes and the built output:
+   - Modified source files (e.g. `src/**/*.svelte`, `src/**/*.js`, `vite.config.js`, `public/*.trex`)
+   - `docs/index.html` (and any changed `docs/assets/*.js`, `docs/assets/*.css`)
+
+3. **Push** to the remote (e.g. `git push origin main`).
+
+If you only commit source and skip the build + docs, Tableau will keep loading the old bundle and users will not see the updates.
+
+## One-line reminder
+
+**Change extension → build (`npm run build` in decomp_tree_v2) → commit source + docs → push.**

@@ -3,7 +3,7 @@
   import { get } from 'svelte/store';
   import * as d3 from 'd3';
   import { treeRoot, pendingDrillNode, statusMessage, selectedNodeInfo, resolvedMeasureDisplayName, configPanelOpen } from '../stores/treeState.js';
-  import { selectMarksForFilter, clearMarkSelection } from '../lib/tableau.js';
+  import { selectMarksForFilter, clearMarkSelection, applyExcludeFilter, getActiveExclusions, removeExclusionValue } from '../lib/tableau.js';
   import { config, saveConfig } from '../stores/config.js';
   import { encodingMap } from '../stores/encodings.js';
   import { drillDown, toggleCollapse, updateNodeInTree, findParent, toggleSortAtDimension, reapplyExpansion } from '../lib/treeEngine.js';
@@ -20,6 +20,20 @@
   let tooltipX = 0;
   let tooltipY = 0;
   let tooltipData = null;
+
+  let contextMenuVisible = false;
+  let contextMenuX = 0;
+  let contextMenuY = 0;
+  let contextMenuNode = null;
+
+  let activeExclusions = [];
+  let exclusionsOpen = false;
+
+  // Reload exclusion list whenever tree data changes (fires after every filter change)
+  $: $treeRoot, refreshExclusions();
+  function refreshExclusions() {
+    getActiveExclusions().then(e => { activeExclusions = e; });
+  }
 
   let helpOpen = false;
 
@@ -392,7 +406,18 @@
       .attr('transform', xform)
       .style('opacity', 0)
       .on('mousemove', handleMouseMove)
-      .on('mouseleave', () => { tooltipVisible = false; });
+      .on('mouseleave', () => { tooltipVisible = false; })
+      .on('contextmenu', (event, d) => {
+        event.preventDefault();
+        event.stopPropagation();
+        const node = d.data;
+        if (node.depth === 0 || !node._drillDimension || node.label === '(Other)') return;
+        const rect = containerEl.getBoundingClientRect();
+        contextMenuX = event.clientX - rect.left;
+        contextMenuY = event.clientY - rect.top;
+        contextMenuNode = node;
+        contextMenuVisible = true;
+      });
 
     // Bar background (gray track, full width)
     nodeEnter.append('rect').attr('class', 'bar-bg')
@@ -1034,11 +1059,11 @@
   }
 
   function handleMouseMove(event, d) {
-    const rect = containerEl.getBoundingClientRect();
     tooltipData = d.data;
-    tooltipX    = event.clientX - rect.left + 14;
-    tooltipY    = event.clientY - rect.top  - 14;
     tooltipVisible = true;
+    const rect = containerEl.getBoundingClientRect();
+    tooltipX = event.clientX - rect.left + 14;
+    tooltipY = event.clientY - rect.top  - 14;
   }
 
   function zoomIn() {
@@ -1195,7 +1220,12 @@
   }
 
   function handleWindowKeydown(e) {
-    if (e.key === 'Escape' && helpOpen) helpOpen = false;
+    if (e.key === 'Escape') { helpOpen = false; exclusionsOpen = false; contextMenuVisible = false; }
+  }
+
+  async function handleRemoveExclusion(fieldName, value) {
+    await removeExclusionValue(fieldName, value);
+    // Panel stays open — list updates reactively when treeRoot refreshes
   }
 
   function handleDrillSelect(dimName, sortOrder = 'desc') {
@@ -1219,6 +1249,16 @@
       return r;
     });
     pendingDrillNode.set(null);
+  }
+
+  async function handleContextMenuExclude() {
+    const node = contextMenuNode;
+    contextMenuVisible = false;
+    contextMenuNode = null;
+    const encMap = get(encodingMap);
+    const dimField = (encMap.breakdown || []).find(f => f.name === node._drillDimension);
+    const fieldName = dimField?.fieldName || node._drillDimension;
+    await applyExcludeFilter(fieldName, node.label);
   }
 </script>
 
@@ -1282,6 +1322,36 @@
 
   <!-- Help button + panel — upper right corner -->
   <div class="help-widget">
+    {#if activeExclusions.length > 0}
+      <div class="excl-widget">
+        <!-- svelte-ignore a11y-click-events-have-key-events a11y-no-static-element-interactions -->
+        <button
+          class="excl-pill"
+          class:excl-pill--open={exclusionsOpen}
+          on:click|stopPropagation={() => { exclusionsOpen = !exclusionsOpen; helpOpen = false; }}
+          title="Active exclusions"
+          aria-expanded={exclusionsOpen}
+        >Excluded ({activeExclusions.length})</button>
+        {#if exclusionsOpen}
+          <div class="excl-panel" role="dialog" aria-label="Active exclusions">
+            <div class="excl-panel-title">Active exclusions</div>
+            <ul class="excl-list">
+              {#each activeExclusions as excl (excl.fieldName + '|' + excl.value)}
+                <li class="excl-item">
+                  <span class="excl-item-label" title={excl.fieldName}>{excl.fieldName}: {excl.value}</span>
+                  <button class="excl-remove-btn" title="Restore" on:click={() => handleRemoveExclusion(excl.fieldName, excl.value)}>×</button>
+                </li>
+              {/each}
+            </ul>
+          </div>
+        {/if}
+      </div>
+    {/if}
+    {#if exclusionsOpen}
+      <!-- svelte-ignore a11y-click-events-have-key-events a11y-no-static-element-interactions -->
+      <div class="help-backdrop" on:click={() => exclusionsOpen = false}></div>
+    {/if}
+
     {#if !$config.showHeader}
       <button
         class="help-btn"
@@ -1336,6 +1406,10 @@
           <li>
             <span class="help-chip help-chip--header">▸</span>
             Click a <strong>column header</strong> to toggle sort order
+          </li>
+          <li>
+            <span class="help-chip help-chip--ctx">⋮</span>
+            <strong>Right-click</strong> a bar to exclude that item from the data
           </li>
         </ul>
 
@@ -1474,6 +1548,16 @@
 
   {#if tooltipVisible && tooltipData}
     <Tooltip x={tooltipX} y={tooltipY} data={tooltipData} />
+  {/if}
+
+  {#if contextMenuVisible && contextMenuNode}
+    <!-- svelte-ignore a11y-click-events-have-key-events a11y-no-static-element-interactions -->
+    <div class="context-backdrop" on:click={() => { contextMenuVisible = false; }}></div>
+    <div class="context-menu" style="left: {contextMenuX}px; top: {contextMenuY}px">
+      <button class="context-menu-item context-menu-item--danger" on:click={handleContextMenuExclude}>
+        Exclude this item
+      </button>
+    </div>
   {/if}
 
   {#if showHScroll}
@@ -1827,10 +1911,162 @@
     font-size: 10px;
   }
 
+  .help-chip--ctx {
+    background: var(--color-surface);
+    color: var(--color-text-secondary);
+    font-size: 14px;
+    letter-spacing: -1px;
+  }
+
+  /* ── Exclusions widget ────────────────────────────────────────────── */
+  .excl-widget {
+    position: relative;
+  }
+
+  .excl-pill {
+    height: 28px;
+    padding: 0 10px;
+    border-radius: 14px;
+    background: #fef2f2;
+    border: 1px solid #fca5a5;
+    color: #dc2626;
+    font-size: 11px;
+    font-weight: 600;
+    cursor: pointer;
+    white-space: nowrap;
+    transition: background 0.12s, box-shadow 0.12s;
+    line-height: 1;
+  }
+
+  .excl-pill:hover,
+  .excl-pill--open {
+    background: #dc2626;
+    color: #fff;
+    border-color: #dc2626;
+  }
+
+  .excl-panel {
+    position: absolute;
+    top: calc(100% + 8px);
+    right: 0;
+    min-width: 220px;
+    max-width: 300px;
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: 10px;
+    box-shadow: 0 6px 24px rgba(0,0,0,0.13);
+    padding: 10px 12px;
+    z-index: 21;
+    animation: help-in 0.2s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  .excl-panel-title {
+    font-size: 10px;
+    font-weight: 700;
+    color: var(--color-text-primary);
+    text-transform: uppercase;
+    letter-spacing: 0.07em;
+    margin-bottom: 8px;
+  }
+
+  .excl-list {
+    list-style: none;
+    padding: 0;
+    margin: 0;
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .excl-item {
+    display: flex;
+    align-items: center;
+    justify-content: space-between;
+    gap: 8px;
+    padding: 4px 2px;
+    border-top: 1px solid var(--color-border-subtle);
+  }
+
+  .excl-item:first-child {
+    border-top: none;
+  }
+
+  .excl-item-label {
+    font-size: 12px;
+    color: var(--color-text-primary);
+    flex: 1;
+    min-width: 0;
+    overflow: hidden;
+    text-overflow: ellipsis;
+    white-space: nowrap;
+  }
+
+  .excl-remove-btn {
+    flex-shrink: 0;
+    width: 20px;
+    height: 20px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    background: none;
+    border: 1px solid var(--color-border);
+    border-radius: 50%;
+    font-size: 14px;
+    line-height: 1;
+    color: var(--color-text-secondary);
+    cursor: pointer;
+    transition: background 0.1s, border-color 0.1s, color 0.1s;
+  }
+
+  .excl-remove-btn:hover {
+    background: #fef2f2;
+    border-color: #fca5a5;
+    color: #dc2626;
+  }
+
   .help-backdrop {
     position: absolute;
     inset: 0;
     z-index: 19;
+  }
+
+  .context-backdrop {
+    position: absolute;
+    inset: 0;
+    z-index: 29;
+  }
+
+  .context-menu {
+    position: absolute;
+    background: var(--color-surface);
+    border: 1px solid var(--color-border);
+    border-radius: var(--radius-md);
+    box-shadow: var(--shadow-xl);
+    padding: 4px;
+    z-index: 30;
+    min-width: 160px;
+    animation: help-in 0.12s cubic-bezier(0.22, 1, 0.36, 1);
+  }
+
+  .context-menu-item {
+    display: block;
+    width: 100%;
+    padding: 6px 10px;
+    background: none;
+    border: none;
+    border-radius: var(--radius-sm);
+    font-size: var(--text-sm);
+    cursor: pointer;
+    text-align: left;
+    transition: background 0.1s;
+  }
+
+  .context-menu-item--danger {
+    color: #dc2626;
+  }
+
+  .context-menu-item--danger:hover {
+    background: #fef2f2;
   }
 
   /* ── Scrollbars ───────────────────────────────────────────────── */

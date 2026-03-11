@@ -1,0 +1,34 @@
+---
+description: Standard workflow for decomp_tree_v2 (plan, verify, simple changes, review)
+globs: decomp_tree_v2/**/*
+alwaysApply: false
+---
+
+# Decomp Tree V2 — Standard Workflow
+
+When working on the decomp_tree_v2 extension, follow this workflow.
+
+## 1. Plan first
+
+- Think through the problem and read the codebase for relevant files.
+- Write a plan to `projectplan.md` (in project root or decomp_tree_v2 as appropriate).
+- The plan must include a list of todo items you can check off as you complete them.
+
+## 2. Verify before coding
+
+- Before starting implementation, check in with the user so they can verify the plan.
+
+## 3. Execute and track
+
+- Work through the todo items, marking each complete as you go.
+- At every step, give a high-level explanation of what you changed.
+
+## 4. Keep changes simple
+
+- Make every task and code change as simple as possible.
+- Avoid massive or complex changes.
+- Each change should impact as little code as possible. Everything is about simplicity.
+
+## 5. Review
+
+- Add a review section to `projectplan.md` with a summary of the changes and any other relevant information.
