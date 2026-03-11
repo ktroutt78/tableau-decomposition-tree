@@ -973,7 +973,7 @@
   .select-input:focus,
   .text-input:focus {
     border-color: var(--color-accent);
-    background: white;
+    background: var(--color-bg);
   }
 
   /* Footer */
