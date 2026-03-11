@@ -154,7 +154,7 @@
 
   .status-text {
     font-size: var(--text-sm);
-    color: var(--color-text-muted);
+    color: var(--color-text-secondary);
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
