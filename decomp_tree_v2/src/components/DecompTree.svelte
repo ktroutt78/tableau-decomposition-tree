@@ -1251,7 +1251,7 @@
       : `left:8px; top:${sc}px; transform:translateY(-50%)`}
     <!-- svelte-ignore a11y-click-events-have-key-events a11y-no-static-element-interactions -->
     <div class="col-header-overlay" style={style} on:click={() => handleSortToggle(h.dim)}>
-      <div class="col-header-title" style="font-size:{$config.headerFontSize ?? 12}px; color:{$config.headerColor ?? '#334155'}">
+      <div class="col-header-title" style="font-size:{$config.headerFontSize ?? 12}px; color:{$config.headerColor ?? (isDarkBg ? '#94a3b8' : '#334155')}">
         ▸ by {h.dim}
         <span class="sort-arrow">{h.sortOrder === 'asc' ? '↑' : '↓'}</span>
       </div>
