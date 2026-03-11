@@ -9,9 +9,9 @@ export const defaultConfig = {
   maxChildrenShown: 5,
   cornerRadius: 10,
   colorTheme: 'cobalt',
-  customColorStart: '#164E63',
-  customColorMiddle: '#22D3EE',
-  customColorEnd: '#DB2777',
+  customColorStart: '#1e40af',
+  customColorMiddle: '',
+  customColorEnd: '#93c5fd',
   linkStyle: 'curved',
   bgColor: '#ffffff',
   useGradient: true,
@@ -34,7 +34,7 @@ export const defaultConfig = {
   labelMode: 'both',
   smartZoom: true,
   barScaleMode: 'parent',
-  linkColorActive: '#1D4ED8',
+  linkColorActive: '',
   linkColorInactive: '#94a3b8',
   linkOpacity: 0.9,
   linkStrokeWidth: 2,
@@ -44,7 +44,8 @@ export const defaultConfig = {
   animationDuration: 300,
   initialAlignment: 'top-left',
   tooltipNarrative: '<measure>: <value>\n% of Parent: <pct>\nRecords: <count>',
-  allowSaveExpansionState: false
+  allowSaveExpansionState: false,
+  showHeader: true
 };
 
 export const config = writable({ ...defaultConfig });

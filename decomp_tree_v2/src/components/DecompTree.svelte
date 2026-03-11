@@ -57,6 +57,11 @@
   // Set before collapse / re-expand updates so the user's current pan/zoom is preserved.
   let _suppressNextFit = false;
 
+  // When set to a node ID, doFitToView delegates to doPanOnly — pans to show that
+  // node + its children at the current zoom scale instead of recalculating scale.
+  // Used when smartZoom is OFF and a drill produces nodes that may be off-screen.
+  let _panToNodeId = null;
+
   // HTML column headers (driven from D3 layout, updated each render)
   let colHeaders = []; // [{ dimName, dataX }]
 
@@ -94,7 +99,8 @@
     sage:        { start: '#6EE7B7', end: '#3D6B52' },
     slate:       { start: '#94A3B8', end: '#334155' },
   };
-  const BAR_BG_COLOR = '#e2e8f0'; // gray track
+  // Bar track color — computed in renderTree so it reacts to isDarkBg
+  let BAR_BG_COLOR = '#e2e8f0';
 
   onMount(() => {
     const svgSel = d3.select(svgEl);
@@ -184,6 +190,7 @@
 
   function renderTree(rootData, cfg, valueName) {
     if (!mainGroup || !rootData) return;
+    BAR_BG_COLOR = isDarkBg ? '#334155' : '#e2e8f0';
 
     const isLR     = cfg.orientation === 'LR';
     const dur      = cfg.animationDuration;
@@ -262,8 +269,8 @@
 
     const fontSize      = cfg.fontSize    || 13;
     const subFontSize   = cfg.subFontSize || 11;
-    const headingColor  = cfg.headingColor    || '#1e293b';
-    const subheadColor  = cfg.subheadingColor || '#64748b';
+    const headingColor  = isDarkBg ? '#f1f5f9' : (cfg.headingColor    || '#1e293b');
+    const subheadColor  = isDarkBg ? '#94a3b8' : (cfg.subheadingColor || '#64748b');
     const fontFamilyMap = {
       system: 'system-ui, sans-serif',
       serif:  'Georgia, serif',
@@ -567,12 +574,15 @@
     colHeaders = Array.from(headerMap.values());
   }
 
-  // Returns the start color for the current color theme — used for active link color.
+  // Returns the theme-derived active link color.
+  // Slate is a special case: its start color (#94A3B8) is identical to the inactive
+  // link default (#94a3b8), making active/inactive links indistinguishable.
+  // Use the end color (#334155) for Slate so active links are clearly distinct.
   function getActiveColor(cfg) {
     const theme = COLOR_THEMES[cfg.colorTheme] || COLOR_THEMES.cobalt;
-    return cfg.colorTheme === 'custom'
-      ? (cfg.customColorStart || '#164E63')
-      : theme.start;
+    if (cfg.colorTheme === 'custom') return cfg.customColorStart || '#1e40af';
+    if (cfg.colorTheme === 'slate')  return theme.end;
+    return theme.start;
   }
 
   // Returns the stroke color for a link.
@@ -611,9 +621,11 @@
 
   function resolveLinkColor(link, sel, cfg) {
     if (!isLinkActive(link, sel)) return cfg.linkColorInactive || '#94a3b8';
+    // cfg.linkColorActive: user override — empty string / falsy means follow theme
+    const activeColor = cfg.linkColorActive || getActiveColor(cfg);
     return link.target.data.value < 0
       ? (cfg.negativeColor || '#dc2626')
-      : getActiveColor(cfg);
+      : activeColor;
   }
 
   function resolveLinkWidth(link, sel, cfg) {
@@ -692,9 +704,66 @@
     }
   }
 
+  // Pan-only follow: keeps the current zoom scale, translates the minimum amount
+  // needed to bring nodeId + its children into the viewport. No-ops if already visible.
+  function doPanOnly(rootData, cfg, targetId) {
+    if (!mainGroup || !svgEl || !rootData || !targetId) return;
+    const isLR = cfg.orientation === 'LR';
+    const nw   = cfg.nodeWidth;
+    const nh   = _lastNodeH;
+    function visibleChildren(d) {
+      if (d._collapsed || !d.children) return null;
+      return d.children.slice(0, cfg.maxChildrenShown + 1);
+    }
+    const hier = d3.hierarchy(rootData, visibleChildren);
+    d3.tree().nodeSize(
+      isLR ? [nh + cfg.siblingSpacing, nw + cfg.levelSpacing]
+           : [nw + cfg.siblingSpacing, nh + cfg.levelSpacing]
+    )(hier);
+    // Must match renderTree's coordinate system — apply the same top-align pass
+    if (cfg.initialAlignment === 'top-left' && isLR) topAlignHier(hier, isLR);
+    const panNode = hier.descendants().find(n => n.data.id === targetId);
+    if (!panNode) return;
+    const focusNodes = panNode.children?.length
+      ? [panNode, ...panNode.children]
+      : [panNode];
+    const xs = focusNodes.map(n => isLR ? n.y : n.x);
+    const ys = focusNodes.map(n => isLR ? n.x : n.y);
+    const pad = 30;
+    const x0 = Math.min(...xs) - nw / 2 - pad;
+    const y0 = Math.min(...ys) - nh / 2 - pad;
+    const x1 = Math.max(...xs) + nw / 2 + pad;
+    const y1 = Math.max(...ys) + nh / 2 + pad;
+    const k  = currentZoom.k;
+    const w  = containerWidth  || 800;
+    const h  = containerHeight || 600;
+    // No-op if the target bbox is already fully within the viewport
+    if (x0 * k + currentZoom.x >= 0 &&
+        y0 * k + currentZoom.y >= 0 &&
+        x1 * k + currentZoom.x <= w &&
+        y1 * k + currentZoom.y <= h) return;
+    // Minimum pan: scroll just enough to bring the bbox into view, no more
+    let tx = currentZoom.x;
+    let ty = currentZoom.y;
+    if (x1 * k + tx > w) tx = w - x1 * k;
+    if (y1 * k + ty > h) ty = h - y1 * k;
+    if (x0 * k + tx < 0) tx = -x0 * k;
+    if (y0 * k + ty < 0) ty = -y0 * k;
+    // Header collision prevention (mirrors doFitToView)
+    if (isLR && colHeaders.length) {
+      ty = Math.max(ty, 44 - (y0 + pad) * k);
+    } else if (!isLR && colHeaders.length) {
+      tx = Math.max(tx, 160 - (x0 + pad) * k);
+    }
+    d3.select(svgEl)
+      .transition('fit').duration(350)
+      .call(zoomBehavior.transform, d3.zoomIdentity.translate(tx, ty).scale(k));
+  }
+
   function doFitToView(rootData, cfg, { skipMinScale = false } = {}) {
     if (!mainGroup || !svgEl || !rootData) return;
-    if (_suppressNextFit) { _suppressNextFit = false; return; }
+    if (_suppressNextFit) { _suppressNextFit = false; _lastDrilledNodeId = null; _panToNodeId = null; return; }
+    if (_panToNodeId) { const id = _panToNodeId; _panToNodeId = null; doPanOnly(rootData, cfg, id); return; }
     const isLR = cfg.orientation === 'LR';
     const nw = cfg.nodeWidth;
     const nh = _lastNodeH;
@@ -858,7 +927,11 @@
         const cfg = get(config);
         // reapplyExpansion recursively re-drills using the sibling's full dimension path
         const updated = reapplyExpansion(drilledSibling, node, get(encodingMap), cfg.maxChildrenShown, cfg.excludeNulls);
-        _lastDrilledNodeId = node.id; // signal doFitToView to smart-zoom this node
+        if (cfg.smartZoom) {
+          _lastDrilledNodeId = node.id; // signal doFitToView to smart-zoom this node
+        } else {
+          _panToNodeId = node.id; // pan-only: scroll to show new nodes without rescaling
+        }
         treeRoot.update(root => {
           let r = updateNodeInTree(root, node.id, () => updated);
           for (const sib of siblings) {
@@ -892,7 +965,12 @@
       // Collapse: clear children but keep _drillDimension so we know this node was
       // user-collapsed. When they click + again we show the picker instead of
       // auto-drilling from a sibling. _rows is preserved for fast re-drill.
-      _lastDrilledNodeId = d.parent?.data?.id ?? d.data.id;
+      const cfg = get(config);
+      if (cfg.smartZoom) {
+        _lastDrilledNodeId = d.parent?.data?.id ?? d.data.id;
+      } else {
+        _suppressNextFit = true;
+      }
       treeRoot.update(root => updateNodeInTree(root, node.id,
         n => ({ ...n, children: null, _collapsed: false })));
 
@@ -932,8 +1010,11 @@
         const cfg = get(config);
         const encMap = get(encodingMap);
         const updated = reapplyExpansion(drilledSibling, node, encMap, cfg.maxChildrenShown, cfg.excludeNulls);
-        _lastDrilledNodeId = node.id;
-        if (!cfg.smartZoom) _suppressNextFit = true;
+        if (cfg.smartZoom) {
+          _lastDrilledNodeId = node.id;
+        } else {
+          _panToNodeId = node.id; // pan-only: scroll to show new nodes without rescaling
+        }
         treeRoot.update(root => {
           let r = updateNodeInTree(root, node.id, () => updated);
           return collapseExpandedSiblings(r, siblings, node.id);
@@ -1032,6 +1113,17 @@
   // Automatically disappears when the root is expanded and reappears on collapse/reload.
   $: showDrillHint = !!$treeRoot && !$treeRoot.children?.length;
 
+  // Derive whether the configured background is dark so overlays (col headers,
+  // drill hint) can adapt their surface color instead of always being white.
+  $: isDarkBg = (() => {
+    const hex = ($config.bgColor || '#ffffff').replace('#', '');
+    if (hex.length !== 6) return false;
+    const r = parseInt(hex.slice(0, 2), 16);
+    const g = parseInt(hex.slice(2, 4), 16);
+    const b = parseInt(hex.slice(4, 6), 16);
+    return (0.299 * r + 0.587 * g + 0.114 * b) < 128;
+  })();
+
   const SCROLLBAR_SIZE = 10;
 
   $: hContentWidth  = treeBounds ? (treeBounds.x1 - treeBounds.x0) * currentZoom.k : 0;
@@ -1102,7 +1194,11 @@
     if (!$pendingDrillNode) return;
     const pendingNode = $pendingDrillNode;
     const updated = drillDown(pendingNode, dimName, $encodingMap, $config.maxChildrenShown, $config.excludeNulls, sortOrder);
-    _lastDrilledNodeId = pendingNode.id; // signal doFitToView to smart-zoom this node
+    if ($config.smartZoom) {
+      _lastDrilledNodeId = pendingNode.id; // smart-zoom: rescale + pan to this node
+    } else {
+      _panToNodeId = pendingNode.id; // pan-only: scroll to show new nodes without rescaling
+    }
     treeRoot.update(root => {
       const parent = findParent(root, pendingNode.id);
       const siblings = parent?.children || [];
@@ -1129,7 +1225,21 @@
   bind:this={containerEl}
   bind:clientWidth={containerWidth}
   bind:clientHeight={containerHeight}
-  style="background: {$config.bgColor}"
+  style="background: {$config.bgColor};
+    --surface-bg:           {isDarkBg ? 'rgba(30,41,59,0.93)'       : 'rgba(255,255,255,0.92)'};
+    --surface-bg-solid:     {isDarkBg ? '#1e293b'                   : '#ffffff'};
+    --surface-bg-hover:     {isDarkBg ? 'rgba(30,41,59,1)'          : 'rgba(255,255,255,1)'};
+    --surface-text:         {isDarkBg ? '#cbd5e1'                   : '#1e293b'};
+    --surface-border:       {isDarkBg ? '#475569'                   : '#e2e8f0'};
+    --surface-border-hover: {isDarkBg ? '#64748b'                   : '#94a3b8'};
+    --color-surface:        {isDarkBg ? '#1e293b'                   : 'var(--color-surface-default, #fff)'};
+    --color-bg:             {isDarkBg ? '#0f172a'                   : 'var(--color-bg-default, #f8fafc)'};
+    --color-border:         {isDarkBg ? '#334155'                   : 'var(--color-border-default, #e2e8f0)'};
+    --color-border-subtle:  {isDarkBg ? '#1e293b'                   : 'var(--color-border-subtle-default, #f1f5f9)'};
+    --color-text-primary:   {isDarkBg ? '#f1f5f9'                   : 'var(--color-text-primary-default, #1e293b)'};
+    --color-text-secondary: {isDarkBg ? '#94a3b8'                   : 'var(--color-text-secondary-default, #64748b)'};
+    --color-text-muted:     {isDarkBg ? '#64748b'                   : 'var(--color-text-muted-default, #94a3b8)'};
+    --color-accent-subtle:  {isDarkBg ? 'rgba(74,108,247,0.18)'     : 'var(--color-accent-subtle-default, #eff3ff)'};"
 >
   <svg bind:this={svgEl} class="tree-svg"></svg>
 
@@ -1199,7 +1309,7 @@
           </li>
           <li>
             <span class="help-chip help-chip--bar"></span>
-            Click a <strong>bar</strong> to select — filters other sheets on the dashboard
+            Click a <strong>bar</strong> to filter other sheets; click again to deselect
           </li>
           <li>
             <span class="help-chip help-chip--header">▸</span>
@@ -1244,7 +1354,7 @@
                 <path d="M7 1v2.5M7 8.5v4.5M1 7h2.5M8.5 7h4.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
               </svg>
             </span>
-            <strong>Smart zoom</strong> — auto-zooms to each new drill level; toggles on/off
+            <strong>Smart zoom</strong> — rescales to new nodes when on; pans only when off
           </li>
           <li>
             <span class="help-chip">
@@ -1511,11 +1621,11 @@
     align-items: center;
     gap: 5px;
     font-weight: 600;
-    background: rgba(255, 255, 255, 0.92);
+    background: var(--surface-bg);
     padding: 3px 9px;
     border-radius: 5px;
     white-space: nowrap;
-    border: 1px solid #e2e8f0;
+    border: 1px solid var(--surface-border);
     backdrop-filter: blur(4px);
     box-shadow: 0 1px 4px rgba(0, 0, 0, 0.07);
     transition: background 0.15s, border-color 0.15s;
@@ -1523,8 +1633,8 @@
   }
 
   .col-header-overlay:hover .col-header-title {
-    background: rgba(255, 255, 255, 1);
-    border-color: #94a3b8;
+    background: var(--surface-bg-hover);
+    border-color: var(--surface-border-hover);
   }
 
   .sort-arrow {
@@ -1539,9 +1649,9 @@
     display: flex;
     align-items: center;
     gap: 8px;
-    background: white;
-    color: #1e293b;
-    border: 1px solid #e2e8f0;
+    background: var(--surface-bg-solid);
+    color: var(--surface-text);
+    border: 1px solid var(--surface-border);
     border-radius: 10px;
     padding: 11px 18px;
     font-size: 14px;
@@ -1563,7 +1673,7 @@
     transform: translateX(-50%);
     border-width: 0 10px 10px 10px;
     border-style: solid;
-    border-color: transparent transparent #e2e8f0 transparent;
+    border-color: transparent transparent var(--surface-border) transparent;
   }
 
   .drill-hint::after {
@@ -1574,7 +1684,7 @@
     transform: translateX(-50%);
     border-width: 0 9px 9px 9px;
     border-style: solid;
-    border-color: transparent transparent white transparent;
+    border-color: transparent transparent var(--surface-bg-solid) transparent;
   }
 
   @keyframes hint-pop {
@@ -1620,7 +1730,7 @@
     position: absolute;
     top: calc(100% + 8px);
     right: 0;
-    width: 460px;
+    width: 500px;
     background: var(--color-surface, #fff);
     border: 1px solid var(--color-border, #e2e8f0);
     border-radius: 10px;

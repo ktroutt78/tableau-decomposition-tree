@@ -14,6 +14,22 @@
   import ConfigPanel from './components/ConfigPanel.svelte';
   import EmptyState from './components/EmptyState.svelte';
 
+  $: isDarkBg = (() => {
+    const hex = ($config.bgColor || '#ffffff').replace('#', '');
+    if (hex.length !== 6) return false;
+    const r = parseInt(hex.slice(0, 2), 16);
+    const g = parseInt(hex.slice(2, 4), 16);
+    const b = parseInt(hex.slice(4, 6), 16);
+    return (0.299 * r + 0.587 * g + 0.114 * b) < 128;
+  })();
+
+  $: shellStyle = isDarkBg
+    ? `--color-surface:#1e293b; --color-bg:#0f172a; --color-border:#334155;
+       --color-border-subtle:#1e293b; --color-text-primary:#f1f5f9;
+       --color-text-secondary:#94a3b8; --color-text-muted:#64748b;
+       --color-accent-subtle:rgba(74,108,247,0.18);`
+    : '';
+
   let _prevValueName = null;
 
   function onDataReady(encMap, rows, { forceReset = true } = {}) {
@@ -99,8 +115,8 @@
   });
 </script>
 
-<div class="app-shell">
-  <Header />
+<div class="app-shell" style={shellStyle}>
+  {#if $config.showHeader}<Header />{/if}
 
   <main class="viz-area">
     {#if $isReadyToRender && $treeRoot}

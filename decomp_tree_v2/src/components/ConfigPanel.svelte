@@ -365,6 +365,18 @@
       </label>
 
       <label class="toggle-row">
+        <span class="toggle-label">Show header bar</span>
+        <button
+          class="toggle-btn"
+          class:on={draft.showHeader !== false}
+          on:click={() => draft.showHeader = !(draft.showHeader !== false)}
+          role="switch"
+          aria-label="Show header bar"
+          aria-checked={draft.showHeader !== false}
+        ></button>
+      </label>
+
+      <label class="toggle-row">
         <span class="toggle-label">Show group count</span>
         <button
           class="toggle-btn"

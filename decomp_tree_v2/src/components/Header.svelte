@@ -158,6 +158,9 @@
     white-space: nowrap;
     overflow: hidden;
     text-overflow: ellipsis;
+    /* Truncate from the left so the current drill dimension (rightmost segment)
+       stays visible when the full path is too long to fit */
+    direction: rtl;
   }
 
   .header-right {
