@@ -47,23 +47,25 @@
 
 <header class="app-header">
   <div class="header-left">
-    <div class="logo-mark">
-      <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
-        <circle cx="3" cy="9" r="2.5" fill="currentColor" opacity="0.9"/>
-        <circle cx="9" cy="4" r="2.5" fill="currentColor" opacity="0.75"/>
-        <circle cx="9" cy="14" r="2.5" fill="currentColor" opacity="0.75"/>
-        <circle cx="15" cy="2" r="1.8" fill="currentColor" opacity="0.6"/>
-        <circle cx="15" cy="9" r="1.8" fill="currentColor" opacity="0.6"/>
-        <circle cx="15" cy="16" r="1.8" fill="currentColor" opacity="0.6"/>
-        <line x1="5.4" y1="7.6" x2="7" y2="5.4" stroke="currentColor" stroke-width="1.2" stroke-opacity="0.5"/>
-        <line x1="5.4" y1="10.4" x2="7" y2="12.6" stroke="currentColor" stroke-width="1.2" stroke-opacity="0.5"/>
-        <line x1="11.4" y1="4.2" x2="13.3" y2="2.9" stroke="currentColor" stroke-width="1.2" stroke-opacity="0.4"/>
-        <line x1="11.4" y1="9" x2="13.3" y2="9" stroke="currentColor" stroke-width="1.2" stroke-opacity="0.4"/>
-        <line x1="11.4" y1="13.8" x2="13.3" y2="15.1" stroke="currentColor" stroke-width="1.2" stroke-opacity="0.4"/>
-      </svg>
-    </div>
-    <span class="app-title">Decomposition Tree</span>
-    <span class="header-divider">|</span>
+    {#if $config.showHeaderTitle !== false}
+      <div class="logo-mark">
+        <svg width="18" height="18" viewBox="0 0 18 18" fill="none">
+          <circle cx="3" cy="9" r="2.5" fill="currentColor" opacity="0.9"/>
+          <circle cx="9" cy="4" r="2.5" fill="currentColor" opacity="0.75"/>
+          <circle cx="9" cy="14" r="2.5" fill="currentColor" opacity="0.75"/>
+          <circle cx="15" cy="2" r="1.8" fill="currentColor" opacity="0.6"/>
+          <circle cx="15" cy="9" r="1.8" fill="currentColor" opacity="0.6"/>
+          <circle cx="15" cy="16" r="1.8" fill="currentColor" opacity="0.6"/>
+          <line x1="5.4" y1="7.6" x2="7" y2="5.4" stroke="currentColor" stroke-width="1.2" stroke-opacity="0.5"/>
+          <line x1="5.4" y1="10.4" x2="7" y2="12.6" stroke="currentColor" stroke-width="1.2" stroke-opacity="0.5"/>
+          <line x1="11.4" y1="4.2" x2="13.3" y2="2.9" stroke="currentColor" stroke-width="1.2" stroke-opacity="0.4"/>
+          <line x1="11.4" y1="9" x2="13.3" y2="9" stroke="currentColor" stroke-width="1.2" stroke-opacity="0.4"/>
+          <line x1="11.4" y1="13.8" x2="13.3" y2="15.1" stroke="currentColor" stroke-width="1.2" stroke-opacity="0.4"/>
+        </svg>
+      </div>
+      <span class="app-title">Decomposition Tree</span>
+      <span class="header-divider">|</span>
+    {/if}
     <span class="status-text" title={breadcrumb || defaultStatus}>{breadcrumb ?? defaultStatus}</span>
   </div>
 

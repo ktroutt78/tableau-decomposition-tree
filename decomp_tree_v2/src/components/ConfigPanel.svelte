@@ -377,6 +377,20 @@
       </label>
 
       <label class="toggle-row">
+        <span class="toggle-label">Show title &amp; logo</span>
+        <button
+          class="toggle-btn"
+          class:on={draft.showHeaderTitle !== false}
+          on:click={() => draft.showHeaderTitle = !(draft.showHeaderTitle !== false)}
+          role="switch"
+          aria-label="Show title and logo"
+          aria-checked={draft.showHeaderTitle !== false}
+        >
+          <span class="toggle-thumb"></span>
+        </button>
+      </label>
+
+      <label class="toggle-row">
         <span class="toggle-label">Show group count</span>
         <button
           class="toggle-btn"

@@ -45,7 +45,8 @@ export const defaultConfig = {
   initialAlignment: 'top-left',
   tooltipNarrative: '<measure>: <value>\n% of Parent: <pct>\nRecords: <count>',
   allowSaveExpansionState: false,
-  showHeader: true
+  showHeader: true,
+  showHeaderTitle: true
 };
 
 export const config = writable({ ...defaultConfig });
