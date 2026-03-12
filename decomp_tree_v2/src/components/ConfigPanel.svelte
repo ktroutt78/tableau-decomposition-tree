@@ -11,44 +11,45 @@
     { id: 'ultraviolet', label: 'Ultraviolet', start: '#C4B5FD', end: '#5B21B6' },
     { id: 'sage',       label: 'Sage',        start: '#6EE7B7', end: '#3D6B52' },
     { id: 'slate',      label: 'Slate',       start: '#94A3B8', end: '#334155' },
-    { id: 'custom',     label: 'Custom',      start: '#164E63', middle: '#22D3EE', end: '#DB2777' }
+    { id: 'custom',     label: 'Custom',      start: '#1e3a5f', middle: '#e2522a', end: '#f7c074' }
   ];
 
-  async function apply() {
-    await saveConfig(draft);
-    configPanelOpen.set(false);
+  let saveTimer;
+  function debouncedSave() {
+    clearTimeout(saveTimer);
+    saveTimer = setTimeout(() => saveConfig({ ...draft }), 350);
   }
 
-  function cancel() {
+  function close() {
     configPanelOpen.set(false);
   }
 
   function resetToDefaults() {
     draft = { ...defaultConfig };
+    saveConfig({ ...draft });
   }
 
   function handleKey(e) {
-    if (e.key === 'Escape') cancel();
+    if (e.key === 'Escape') close();
   }
 </script>
 
 <svelte:window on:keydown={handleKey} />
 
 <!-- svelte-ignore a11y-click-events-have-key-events a11y-no-static-element-interactions -->
-<div class="drawer-backdrop" on:click={cancel}></div>
+<div class="drawer-backdrop" on:click={close}></div>
 
 <div class="config-drawer" role="dialog" aria-modal="true" aria-label="Visualization Settings">
   <!-- Header -->
   <div class="drawer-header">
     <div class="drawer-header-left">
-      <svg width="16" height="16" viewBox="0 0 16 16" fill="none" class="settings-icon">
-        <circle cx="8" cy="8" r="2.5" stroke="currentColor" stroke-width="1.5"/>
-        <path d="M8 1v1.5M8 13.5V15M15 8h-1.5M2.5 8H1M12.36 3.64l-1.06 1.06M4.7 11.3l-1.06 1.06M12.36 12.36l-1.06-1.06M4.7 4.7L3.64 3.64"
-          stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
+      <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round" class="settings-icon">
+        <circle cx="12" cy="12" r="3"/>
+        <path d="M19.4 15a1.65 1.65 0 0 0 .33 1.82l.06.06a2 2 0 0 1-2.83 2.83l-.06-.06a1.65 1.65 0 0 0-1.82-.33 1.65 1.65 0 0 0-1 1.51V21a2 2 0 0 1-4 0v-.09A1.65 1.65 0 0 0 9 19.4a1.65 1.65 0 0 0-1.82.33l-.06.06a2 2 0 0 1-2.83-2.83l.06-.06A1.65 1.65 0 0 0 4.68 15a1.65 1.65 0 0 0-1.51-1H3a2 2 0 0 1 0-4h.09A1.65 1.65 0 0 0 4.6 9a1.65 1.65 0 0 0-.33-1.82l-.06-.06a2 2 0 0 1 2.83-2.83l.06.06A1.65 1.65 0 0 0 9 4.68a1.65 1.65 0 0 0 1-1.51V3a2 2 0 0 1 4 0v.09a1.65 1.65 0 0 0 1 1.51 1.65 1.65 0 0 0 1.82-.33l.06-.06a2 2 0 0 1 2.83 2.83l-.06.06A1.65 1.65 0 0 0 19.4 9a1.65 1.65 0 0 0 1.51 1H21a2 2 0 0 1 0 4h-.09a1.65 1.65 0 0 0-1.51 1z"/>
       </svg>
       <h2>Settings</h2>
     </div>
-    <button class="drawer-close" on:click={cancel} aria-label="Close settings">
+    <button class="drawer-close" on:click={close} aria-label="Close settings">
       <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
         <path d="M1 1l12 12M13 1L1 13" stroke="currentColor" stroke-width="1.8" stroke-linecap="round"/>
       </svg>
@@ -77,7 +78,7 @@
               class="theme-swatch"
               class:active={draft.colorTheme === theme.id}
               title={theme.label}
-              on:click={() => draft.colorTheme = theme.id}
+              on:click={() => { draft.colorTheme = theme.id; debouncedSave(); }}
               style={theme.id !== 'custom'
                 ? `background: linear-gradient(135deg, ${theme.start}, ${theme.end})`
                 : `background: linear-gradient(135deg, ${theme.start}, ${theme.middle}, ${theme.end})`}
@@ -97,21 +98,21 @@
             <label class="color-picker-label">
               <span>Start color</span>
               <div class="color-pick-row">
-                <input type="color" bind:value={draft.customColorStart} class="color-input" />
+                <input type="color" bind:value={draft.customColorStart} on:input={debouncedSave} class="color-input" />
                 <span class="color-hex">{draft.customColorStart}</span>
               </div>
             </label>
             <label class="color-picker-label">
               <span>Middle color</span>
               <div class="color-pick-row">
-                <input type="color" bind:value={draft.customColorMiddle} class="color-input" />
+                <input type="color" bind:value={draft.customColorMiddle} on:input={debouncedSave} class="color-input" />
                 <span class="color-hex">{draft.customColorMiddle}</span>
               </div>
             </label>
             <label class="color-picker-label">
               <span>End color</span>
               <div class="color-pick-row">
-                <input type="color" bind:value={draft.customColorEnd} class="color-input" />
+                <input type="color" bind:value={draft.customColorEnd} on:input={debouncedSave} class="color-input" />
                 <span class="color-hex">{draft.customColorEnd}</span>
               </div>
             </label>
@@ -123,7 +124,7 @@
           <button
             class="toggle-btn"
             class:on={draft.useGradient}
-            on:click={() => draft.useGradient = !draft.useGradient}
+            on:click={() => { draft.useGradient = !draft.useGradient; debouncedSave(); }}
             role="switch"
             aria-label="Apply gradient to bars"
             aria-checked={draft.useGradient}
@@ -133,11 +134,19 @@
         <label class="color-picker-label" style="margin-top: var(--space-3)">
           <span class="field-label" style="margin-bottom:0">Negative value color</span>
           <div class="color-pick-row">
-            <input type="color" bind:value={draft.negativeColor} class="color-input" />
+            <input type="color" bind:value={draft.negativeColor} on:input={debouncedSave} class="color-input" />
             <span class="color-hex">{draft.negativeColor}</span>
           </div>
         </label>
         <span class="field-hint">Used for negative bars and connector lines.</span>
+
+        <label class="color-picker-label" style="margin-top: var(--space-3)">
+          <span class="field-label" style="margin-bottom:0">Background color</span>
+          <div class="color-pick-row">
+            <input type="color" bind:value={draft.bgColor} on:input={debouncedSave} class="color-input" />
+            <span class="color-hex">{draft.bgColor}</span>
+          </div>
+        </label>
       </section>
 
       <!-- Labels -->
@@ -148,7 +157,7 @@
           <span class="field-label">Font family</span>
           <div class="seg-control" role="group" aria-label="Font family">
             {#each [['system','System'],['serif','Serif'],['mono','Mono']] as [val, label]}
-              <button class="seg-btn seg-btn-sm" class:active={draft.fontFamily === val} on:click={() => draft.fontFamily = val}>{label}</button>
+              <button class="seg-btn seg-btn-sm" class:active={draft.fontFamily === val} on:click={() => { draft.fontFamily = val; debouncedSave(); }}>{label}</button>
             {/each}
           </div>
         </div>
@@ -157,65 +166,54 @@
           <span class="field-label">Show</span>
           <div class="seg-control" role="group" aria-label="Show">
             {#each [['both','Value & %'],['value','Value only'],['percent','% only']] as [val, label]}
-              <button class="seg-btn seg-btn-sm" class:active={draft.labelMode === val} on:click={() => draft.labelMode = val}>{label}</button>
+              <button class="seg-btn seg-btn-sm" class:active={draft.labelMode === val} on:click={() => { draft.labelMode = val; debouncedSave(); }}>{label}</button>
             {/each}
           </div>
         </div>
 
         <label class="toggle-row">
           <span class="toggle-label">Show measure name</span>
-          <button class="toggle-btn" class:on={draft.showMeasureName} on:click={() => draft.showMeasureName = !draft.showMeasureName} role="switch" aria-checked={draft.showMeasureName}><span class="toggle-thumb"></span></button>
+          <button class="toggle-btn" class:on={draft.showMeasureName} on:click={() => { draft.showMeasureName = !draft.showMeasureName; debouncedSave(); }} role="switch" aria-checked={draft.showMeasureName}><span class="toggle-thumb"></span></button>
         </label>
 
-        <div class="two-col">
-          <div class="field-group">
-            <div class="range-header">
-              <label class="field-label" for="fontSize">Heading size</label>
-              <input id="fontSize" type="number" min="10" max="22" bind:value={draft.fontSize} class="num-input-sm" />
-            </div>
-          </div>
-          <div class="field-group">
-            <div class="range-header">
-              <label class="field-label" for="subFontSize">Subheading size</label>
-              <input id="subFontSize" type="number" min="9" max="22" bind:value={draft.subFontSize} class="num-input-sm" />
-            </div>
-          </div>
-        </div>
+        <label class="toggle-row">
+          <span class="toggle-label">Show group count</span>
+          <button class="toggle-btn" class:on={draft.showGroupCount} on:click={() => { draft.showGroupCount = !draft.showGroupCount; debouncedSave(); }} role="switch" aria-checked={draft.showGroupCount}><span class="toggle-thumb"></span></button>
+        </label>
 
-        <div class="two-col">
-          <label class="color-picker-label">
-            <span>Heading color</span>
-            <div class="color-pick-row">
-              <input type="color" bind:value={draft.headingColor} class="color-input" />
-              <span class="color-hex">{draft.headingColor}</span>
-            </div>
-          </label>
-          <label class="color-picker-label">
-            <span>Subheading color</span>
-            <div class="color-pick-row">
-              <input type="color" bind:value={draft.subheadingColor} class="color-input" />
-              <span class="color-hex">{draft.subheadingColor}</span>
-            </div>
-          </label>
+        <div class="label-row">
+          <span class="label-row-name">Heading</span>
+          <input id="fontSize" type="number" min="10" max="22" bind:value={draft.fontSize} on:change={debouncedSave} class="num-input-sm" />
+          <input type="color" bind:value={draft.headingColor} on:input={debouncedSave} class="color-input" />
+        </div>
+        <div class="label-row">
+          <span class="label-row-name">Subhead</span>
+          <input id="subFontSize" type="number" min="9" max="22" bind:value={draft.subFontSize} on:change={debouncedSave} class="num-input-sm" />
+          <input type="color" bind:value={draft.subheadingColor} on:input={debouncedSave} class="color-input" />
         </div>
       </section>
 
       <!-- Column Headers -->
       <section class="config-section">
         <h3 class="section-title">Column Headers</h3>
+        <div class="label-row">
+          <span class="label-row-name">Headers</span>
+          <input id="headerFontSize" type="number" min="9" max="20" bind:value={draft.headerFontSize} on:change={debouncedSave} class="num-input-sm" />
+          <input type="color" bind:value={draft.headerColor} on:input={debouncedSave} class="color-input" />
+        </div>
+      </section>
+
+      <!-- Shape -->
+      <section class="config-section">
+        <h3 class="section-title">Shape</h3>
         <div class="two-col">
-          <div class="field-group">
-            <div class="range-header">
-              <label class="field-label" for="headerFontSize">Font size</label>
-              <input id="headerFontSize" type="number" min="9" max="20" bind:value={draft.headerFontSize} class="num-input-sm" />
-            </div>
-          </div>
           <label class="color-picker-label">
-            <span>Color</span>
-            <div class="color-pick-row">
-              <input type="color" bind:value={draft.headerColor} class="color-input" />
-              <span class="color-hex">{draft.headerColor}</span>
-            </div>
+            <span>Node radius</span>
+            <input id="cornerRadius" type="number" min="0" max="24" bind:value={draft.cornerRadius} on:change={debouncedSave} class="num-input-sm" />
+          </label>
+          <label class="color-picker-label">
+            <span>Bar radius</span>
+            <input id="barRadius" type="number" min="0" max="24" bind:value={draft.barRadius} on:change={debouncedSave} class="num-input-sm" />
           </label>
         </div>
       </section>
@@ -228,7 +226,7 @@
           <span class="field-label">Style</span>
           <div class="seg-control" role="group" aria-label="Link style">
             {#each [['curved','Curved'],['step','Step'],['straight','Straight']] as [val, label]}
-              <button class="seg-btn seg-btn-sm" class:active={draft.linkStyle === val} on:click={() => draft.linkStyle = val}>{label}</button>
+              <button class="seg-btn seg-btn-sm" class:active={draft.linkStyle === val} on:click={() => { draft.linkStyle = val; debouncedSave(); }}>{label}</button>
             {/each}
           </div>
         </div>
@@ -236,15 +234,15 @@
         <div class="field-group">
           <span class="field-label">Line type</span>
           <div class="seg-control" role="group" aria-label="Line type">
-            <button class="seg-btn seg-btn-sm" class:active={draft.linkStrokeType === 'line'} on:click={() => draft.linkStrokeType = 'line'}>
+            <button class="seg-btn seg-btn-sm" class:active={draft.linkStrokeType === 'line'} on:click={() => { draft.linkStrokeType = 'line'; debouncedSave(); }}>
               <svg width="24" height="12" viewBox="0 0 28 14" fill="none"><line x1="2" y1="7" x2="26" y2="7" stroke="currentColor" stroke-width="2" stroke-linecap="round"/></svg>
               <span>Line</span>
             </button>
-            <button class="seg-btn seg-btn-sm" class:active={draft.linkStrokeType === 'dotted'} on:click={() => draft.linkStrokeType = 'dotted'}>
+            <button class="seg-btn seg-btn-sm" class:active={draft.linkStrokeType === 'dotted'} on:click={() => { draft.linkStrokeType = 'dotted'; debouncedSave(); }}>
               <svg width="24" height="12" viewBox="0 0 28 14" fill="none"><line x1="2" y1="7" x2="26" y2="7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-dasharray="0 4"/></svg>
               <span>Dotted</span>
             </button>
-            <button class="seg-btn seg-btn-sm" class:active={draft.linkStrokeType === 'dashed'} on:click={() => draft.linkStrokeType = 'dashed'}>
+            <button class="seg-btn seg-btn-sm" class:active={draft.linkStrokeType === 'dashed'} on:click={() => { draft.linkStrokeType = 'dashed'; debouncedSave(); }}>
               <svg width="24" height="12" viewBox="0 0 28 14" fill="none"><line x1="2" y1="7" x2="26" y2="7" stroke="currentColor" stroke-width="2" stroke-linecap="round" stroke-dasharray="5 3"/></svg>
               <span>Dashed</span>
             </button>
@@ -254,7 +252,7 @@
         <label class="color-picker-label" style="margin-bottom: var(--space-3)">
           <span class="field-label" style="margin-bottom:0">Inactive color</span>
           <div class="color-pick-row">
-            <input type="color" bind:value={draft.linkColorInactive} class="color-input" />
+            <input type="color" bind:value={draft.linkColorInactive} on:input={debouncedSave} class="color-input" />
             <span class="color-hex">{draft.linkColorInactive}</span>
           </div>
         </label>
@@ -265,14 +263,14 @@
               <label class="field-label" for="linkOpacity">Opacity</label>
               <span class="range-val">{Math.round((draft.linkOpacity ?? 0.9) * 100)}%</span>
             </div>
-            <input id="linkOpacity" type="range" min="0.1" max="1" step="0.05" bind:value={draft.linkOpacity} class="range-input"/>
+            <input id="linkOpacity" type="range" min="0.1" max="1" step="0.05" bind:value={draft.linkOpacity} on:input={debouncedSave} class="range-input"/>
           </div>
           <div class="field-group">
             <div class="range-header">
               <label class="field-label" for="linkStrokeWidth">Thickness</label>
               <span class="range-val">{draft.linkStrokeWidth ?? 2}</span>
             </div>
-            <input id="linkStrokeWidth" type="range" min="1" max="6" step="0.5" bind:value={draft.linkStrokeWidth} class="range-input"/>
+            <input id="linkStrokeWidth" type="range" min="1" max="6" step="0.5" bind:value={draft.linkStrokeWidth} on:input={debouncedSave} class="range-input"/>
           </div>
         </div>
       </section>
@@ -287,7 +285,7 @@
 
         <div class="field-group">
           <div class="seg-control" role="group" aria-label="Orientation">
-            <button class="seg-btn" class:active={draft.orientation === 'LR'} on:click={() => draft.orientation = 'LR'}>
+            <button class="seg-btn" class:active={draft.orientation === 'LR'} on:click={() => { draft.orientation = 'LR'; debouncedSave(); }}>
               <svg width="22" height="14" viewBox="0 0 22 14" fill="none">
                 <rect x="1" y="4" width="6" height="6" rx="1.5" fill="currentColor" opacity="0.7"/>
                 <rect x="10" y="1" width="5" height="5" rx="1.5" fill="currentColor" opacity="0.7"/>
@@ -300,7 +298,7 @@
               </svg>
               Left → Right
             </button>
-            <button class="seg-btn" class:active={draft.orientation === 'TB'} on:click={() => draft.orientation = 'TB'}>
+            <button class="seg-btn" class:active={draft.orientation === 'TB'} on:click={() => { draft.orientation = 'TB'; debouncedSave(); }}>
               <svg width="14" height="18" viewBox="0 0 14 18" fill="none">
                 <rect x="4" y="1" width="6" height="5" rx="1.5" fill="currentColor" opacity="0.7"/>
                 <rect x="1" y="9" width="5" height="4" rx="1.5" fill="currentColor" opacity="0.7"/>
@@ -318,11 +316,21 @@
             <span class="field-label">Alignment</span>
             <div class="seg-control" role="group" aria-label="Alignment">
               {#each [['top-left','Top'],['center','Centered']] as [val, label]}
-                <button class="seg-btn seg-btn-sm" class:active={draft.initialAlignment === val} on:click={() => draft.initialAlignment = val}>{label}</button>
+                <button class="seg-btn seg-btn-sm" class:active={draft.initialAlignment === val} on:click={() => { draft.initialAlignment = val; debouncedSave(); }}>{label}</button>
               {/each}
             </div>
           </div>
         {/if}
+
+        <label class="toggle-row">
+          <span class="toggle-label">Show header bar</span>
+          <button class="toggle-btn" class:on={draft.showHeader !== false} on:click={() => { draft.showHeader = !(draft.showHeader !== false); debouncedSave(); }} role="switch" aria-checked={draft.showHeader !== false}><span class="toggle-thumb"></span></button>
+        </label>
+
+        <label class="toggle-row">
+          <span class="toggle-label">Show title &amp; logo</span>
+          <button class="toggle-btn" class:on={draft.showHeaderTitle !== false} on:click={() => { draft.showHeaderTitle = !(draft.showHeaderTitle !== false); debouncedSave(); }} role="switch" aria-checked={draft.showHeaderTitle !== false}><span class="toggle-thumb"></span></button>
+        </label>
       </section>
 
       <section class="config-section">
@@ -333,7 +341,7 @@
             <label class="field-label" for="levelSpacing">Level spacing</label>
             <span class="range-val">{draft.levelSpacing}px</span>
           </div>
-          <input id="levelSpacing" type="range" min="160" max="480" step="20" bind:value={draft.levelSpacing} class="range-input"/>
+          <input id="levelSpacing" type="range" min="160" max="480" step="20" bind:value={draft.levelSpacing} on:input={debouncedSave} class="range-input"/>
         </div>
 
         <div class="field-group">
@@ -341,41 +349,23 @@
             <label class="field-label" for="barHeight">Bar thickness</label>
             <span class="range-val">{draft.barHeight}px</span>
           </div>
-          <input id="barHeight" type="range" min="8" max="48" step="2" bind:value={draft.barHeight} class="range-input"/>
+          <input id="barHeight" type="range" min="8" max="48" step="2" bind:value={draft.barHeight} on:input={debouncedSave} class="range-input"/>
         </div>
 
         <div class="field-group">
           <div class="range-header">
             <label class="field-label" for="maxChildren">Max children shown</label>
-            <input type="number" min="1" max="100" bind:value={draft.maxChildrenShown} class="num-input-sm" />
+            <input type="number" min="1" max="100" bind:value={draft.maxChildrenShown} on:change={debouncedSave} class="num-input-sm" />
           </div>
-          <input id="maxChildren" type="range" min="5" max="50" step="5" bind:value={draft.maxChildrenShown} class="range-input"/>
+          <input id="maxChildren" type="range" min="5" max="50" step="5" bind:value={draft.maxChildrenShown} on:input={debouncedSave} class="range-input"/>
         </div>
 
         <div class="field-group">
           <span class="field-label">Bar scale</span>
           <div class="seg-control" role="group" aria-label="Bar scale">
             {#each [['parent','Parent'],['top','Top Node'],['level','Level Max']] as [val, label]}
-              <button class="seg-btn seg-btn-sm" class:active={draft.barScaleMode === val} on:click={() => draft.barScaleMode = val}>{label}</button>
+              <button class="seg-btn seg-btn-sm" class:active={draft.barScaleMode === val} on:click={() => { draft.barScaleMode = val; debouncedSave(); }}>{label}</button>
             {/each}
-          </div>
-        </div>
-      </section>
-
-      <section class="config-section">
-        <h3 class="section-title">Corner Radius</h3>
-        <div class="two-col">
-          <div class="field-group">
-            <div class="range-header">
-              <label class="field-label" for="cornerRadius">Node</label>
-              <input id="cornerRadius" type="number" min="0" max="24" bind:value={draft.cornerRadius} class="num-input-sm" />
-            </div>
-          </div>
-          <div class="field-group">
-            <div class="range-header">
-              <label class="field-label" for="barRadius">Bar</label>
-              <input id="barRadius" type="number" min="0" max="24" bind:value={draft.barRadius} class="num-input-sm" />
-            </div>
           </div>
         </div>
       </section>
@@ -386,43 +376,11 @@
     {#if activeTab === 'settings'}
 
       <section class="config-section">
-        <h3 class="section-title">Display</h3>
-
-        <label class="color-picker-label" style="margin-bottom: var(--space-3)">
-          <span class="field-label" style="margin-bottom:0">Background color</span>
-          <div class="color-pick-row">
-            <input type="color" bind:value={draft.bgColor} class="color-input" />
-            <span class="color-hex">{draft.bgColor}</span>
-          </div>
-        </label>
-
-        <label class="toggle-row">
-          <span class="toggle-label">Show header bar</span>
-          <button class="toggle-btn" class:on={draft.showHeader !== false} on:click={() => draft.showHeader = !(draft.showHeader !== false)} role="switch" aria-checked={draft.showHeader !== false}><span class="toggle-thumb"></span></button>
-        </label>
-
-        <label class="toggle-row">
-          <span class="toggle-label">Show title &amp; logo</span>
-          <button class="toggle-btn" class:on={draft.showHeaderTitle !== false} on:click={() => draft.showHeaderTitle = !(draft.showHeaderTitle !== false)} role="switch" aria-checked={draft.showHeaderTitle !== false}><span class="toggle-thumb"></span></button>
-        </label>
-
-        <label class="toggle-row">
-          <span class="toggle-label">Show group count</span>
-          <button class="toggle-btn" class:on={draft.showGroupCount} on:click={() => draft.showGroupCount = !draft.showGroupCount} role="switch" aria-checked={draft.showGroupCount}><span class="toggle-thumb"></span></button>
-        </label>
-
-        <label class="toggle-row">
-          <span class="toggle-label">Exclude null values</span>
-          <button class="toggle-btn" class:on={draft.excludeNulls} on:click={() => draft.excludeNulls = !draft.excludeNulls} role="switch" aria-checked={draft.excludeNulls}><span class="toggle-thumb"></span></button>
-        </label>
-      </section>
-
-      <section class="config-section">
         <h3 class="section-title">Values</h3>
 
         <div class="field-group">
           <label class="field-label" for="valueFormat">Format</label>
-          <select id="valueFormat" bind:value={draft.valueFormat} class="select-input">
+          <select id="valueFormat" bind:value={draft.valueFormat} on:change={debouncedSave} class="select-input">
             <option value="auto">Auto (1.2K, 3.4M…)</option>
             <option value="number">Number (1,234)</option>
             <option value="currency">Currency ($1.2K)</option>
@@ -433,22 +391,27 @@
         {#if draft.valueFormat === 'currency'}
           <div class="field-group">
             <label class="field-label" for="currencySymbol">Currency symbol</label>
-            <input id="currencySymbol" type="text" maxlength="3" bind:value={draft.currencySymbol} class="text-input" style="width: 72px" />
+            <input id="currencySymbol" type="text" maxlength="3" bind:value={draft.currencySymbol} on:input={debouncedSave} class="text-input" style="width: 72px" />
           </div>
         {/if}
 
         <div class="field-group">
           <label class="field-label" for="measureAlias">Measure display name</label>
-          <input id="measureAlias" type="text" placeholder="e.g. Profit or =[Field Name]" bind:value={draft.measureAlias} class="text-input" />
+          <input id="measureAlias" type="text" placeholder="e.g. Profit or =[Field Name]" bind:value={draft.measureAlias} on:input={debouncedSave} class="text-input" />
           <span class="field-hint">Static text, or <code>=Field Name</code> to use a calculated field/parameter from the view.</span>
         </div>
+
+        <label class="toggle-row">
+          <span class="toggle-label">Exclude null values</span>
+          <button class="toggle-btn" class:on={draft.excludeNulls} on:click={() => { draft.excludeNulls = !draft.excludeNulls; debouncedSave(); }} role="switch" aria-checked={draft.excludeNulls}><span class="toggle-thumb"></span></button>
+        </label>
       </section>
 
       <section class="config-section">
         <h3 class="section-title">Tooltip</h3>
         <div class="field-group">
           <label class="field-label" for="tooltipNarrative">Narrative template</label>
-          <textarea id="tooltipNarrative" bind:value={draft.tooltipNarrative} class="text-input narrative-input" placeholder="e.g. <Region> drives key results.&#10;Profit: <SUM(Profit)>" rows="4"></textarea>
+          <textarea id="tooltipNarrative" bind:value={draft.tooltipNarrative} on:input={debouncedSave} class="text-input narrative-input" placeholder="e.g. <Region> drives key results.&#10;Profit: <SUM(Profit)>" rows="4"></textarea>
           <p class="field-hint">Replaces default tooltip rows. Built-in: &lt;value&gt;, &lt;pct&gt;, &lt;count&gt;. Also supports dimension names and tooltip shelf fields.</p>
         </div>
       </section>
@@ -461,12 +424,12 @@
             <label class="field-label" for="animDur">Transition speed</label>
             <span class="range-val">{draft.animationDuration}ms</span>
           </div>
-          <input id="animDur" type="range" min="0" max="800" step="50" bind:value={draft.animationDuration} class="range-input"/>
+          <input id="animDur" type="range" min="0" max="800" step="50" bind:value={draft.animationDuration} on:input={debouncedSave} class="range-input"/>
         </div>
 
         <label class="toggle-row">
           <span class="toggle-label">Allow saving expansion state</span>
-          <button class="toggle-btn" class:on={draft.allowSaveExpansionState} on:click={() => draft.allowSaveExpansionState = !draft.allowSaveExpansionState} role="switch" aria-checked={draft.allowSaveExpansionState}><span class="toggle-thumb"></span></button>
+          <button class="toggle-btn" class:on={draft.allowSaveExpansionState} on:click={() => { draft.allowSaveExpansionState = !draft.allowSaveExpansionState; debouncedSave(); }} role="switch" aria-checked={draft.allowSaveExpansionState}><span class="toggle-thumb"></span></button>
         </label>
         <p class="field-hint" style="margin-top: 0">When on, Save state / Clear saved state appear in the header.</p>
       </section>
@@ -478,10 +441,7 @@
   <!-- Footer -->
   <div class="drawer-footer">
     <button class="btn-ghost-sm" on:click={resetToDefaults}>Reset defaults</button>
-    <div class="footer-actions">
-      <button class="btn-secondary-sm" on:click={cancel}>Cancel</button>
-      <button class="btn-primary-sm" on:click={apply}>Apply & Save</button>
-    </div>
+    <button class="btn-secondary-sm" on:click={close}>Close</button>
   </div>
 </div>
 
@@ -657,6 +617,14 @@
     font-size: var(--text-sm); color: var(--color-text-secondary);
   }
 
+  .label-row {
+    display: flex; align-items: center; gap: var(--space-2);
+    padding: 4px 0;
+  }
+  .label-row-name {
+    flex: 1; font-size: var(--text-sm); color: var(--color-text-secondary);
+  }
+
   .color-pick-row { display: flex; align-items: center; gap: var(--space-2); }
 
   .color-input {
@@ -726,7 +694,7 @@
 
   .narrative-input { resize: vertical; min-height: 80px; font-family: var(--font-mono); font-size: var(--text-sm); line-height: 1.5; }
 
-  .field-hint { margin-top: var(--space-1); font-size: var(--text-xs); color: var(--color-text-muted); line-height: 1.4; }
+  .field-hint { margin-top: var(--space-1); font-size: var(--text-xs); color: var(--color-text-secondary); line-height: 1.4; }
 
   .select-input,
   .text-input {
@@ -744,8 +712,6 @@
     display: flex; align-items: center; justify-content: space-between;
     flex-shrink: 0; background: var(--color-surface);
   }
-  .footer-actions { display: flex; gap: var(--space-2); }
-
   .btn-ghost-sm {
     font-size: var(--text-sm); color: var(--color-text-muted);
     padding: 6px var(--space-2); border-radius: var(--radius-md); transition: all var(--transition-fast);
@@ -758,10 +724,4 @@
     border: 1px solid var(--color-border); border-radius: var(--radius-md); transition: all var(--transition-fast);
   }
   .btn-secondary-sm:hover { background: var(--color-border-subtle); border-color: #c0c4cc; }
-
-  .btn-primary-sm {
-    padding: 8px var(--space-4); font-size: var(--text-sm); font-weight: var(--font-medium);
-    color: white; background: var(--color-accent); border-radius: var(--radius-md); transition: all var(--transition-fast);
-  }
-  .btn-primary-sm:hover { background: var(--color-accent-hover); box-shadow: 0 2px 8px rgba(74, 108, 247, 0.35); }
 </style>
