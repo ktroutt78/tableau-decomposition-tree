@@ -1063,7 +1063,7 @@
     tooltipVisible = true;
     const rect = containerEl.getBoundingClientRect();
     tooltipX = event.clientX - rect.left + 14;
-    tooltipY = event.clientY - rect.top  - 14;
+    tooltipY = event.clientY - rect.top - ($config.orientation === 'TB' ? 180 : 14);
   }
 
   function zoomIn() {
