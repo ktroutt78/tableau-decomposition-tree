@@ -93,7 +93,7 @@
       {:else}
         Click + to drill into an attribute
       {/if}
-      {#if data.parent}
+      {#if data.depth > 0}
         <span class="tooltip-hint-secondary">Right-click to exclude</span>
       {/if}
     </div>
