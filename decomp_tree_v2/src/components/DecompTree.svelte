@@ -71,6 +71,11 @@
   // Set before collapse / re-expand updates so the user's current pan/zoom is preserved.
   let _suppressNextFit = false;
 
+  // When true, doFitToView finds the deepest drilled node in the live (post-update)
+  // hierarchy and smart-zooms to it. Used by increaseMaxChildren / decreaseMaxChildren
+  // with smart zoom ON — avoids the pre/post-update ID lookup mismatch.
+  let _smartZoomToDeepest = false;
+
   // When set to a node ID, doFitToView delegates to doPanOnly — pans to show that
   // node + its children at the current zoom scale instead of recalculating scale.
   // Used when smartZoom is OFF and a drill produces nodes that may be off-screen.
@@ -825,6 +830,24 @@
         usedSmartZoom = true;
       }
       _lastDrilledNodeId = null; // consume regardless — avoids stale state
+    } else if (_smartZoomToDeepest) {
+      // maxChildren +/- with smart zoom: find the deepest expanded node in the
+      // live post-update hierarchy (avoids pre/post-update ID mismatch).
+      _smartZoomToDeepest = false;
+      function findDeepestHier(node, depth = 0) {
+        if (!node.children?.length) return null;
+        let best = { node, depth };
+        for (const child of node.children) {
+          const deeper = findDeepestHier(child, depth + 1);
+          if (deeper && deeper.depth > best.depth) best = deeper;
+        }
+        return best;
+      }
+      const deepest = findDeepestHier(hier);
+      if (deepest?.node?.children?.length) {
+        focusNodes = [deepest.node, ...deepest.node.children];
+        usedSmartZoom = true;
+      }
     }
 
     const xs = focusNodes.map(n => isLR ? n.y : n.x);
@@ -1118,16 +1141,8 @@
     const current = get(config);
     const newVal = Math.min(50, current.maxChildrenShown + 1);
     if (newVal === current.maxChildrenShown) return;
-    // Smart zoom ON: re-focus on the deepest drilled node so the updated
-    // (larger) child set is visible after rebuild. OFF: suppress fit entirely.
-    if (current.smartZoom) {
-      const root = get(treeRoot);
-      const deepest = root ? findDeepestDrilled(root) : null;
-      if (deepest) _lastDrilledNodeId = deepest.id;
-      else _suppressNextFit = true;
-    } else {
-      _suppressNextFit = true;
-    }
+    if (current.smartZoom) _smartZoomToDeepest = true;
+    else _suppressNextFit = true;
     await saveConfig({ ...current, maxChildrenShown: newVal });
   }
 
@@ -1135,16 +1150,8 @@
     const current = get(config);
     const newVal = Math.max(1, current.maxChildrenShown - 1);
     if (newVal === current.maxChildrenShown) return;
-    // Smart zoom ON: re-focus on deepest drilled node with the reduced child set.
-    // OFF: suppress fit to keep current view.
-    if (current.smartZoom) {
-      const root = get(treeRoot);
-      const deepest = root ? findDeepestDrilled(root) : null;
-      if (deepest) _lastDrilledNodeId = deepest.id;
-      else _suppressNextFit = true;
-    } else {
-      _suppressNextFit = true;
-    }
+    if (current.smartZoom) _smartZoomToDeepest = true;
+    else _suppressNextFit = true;
     await saveConfig({ ...current, maxChildrenShown: newVal });
   }
 
