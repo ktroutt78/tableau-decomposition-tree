@@ -1297,15 +1297,23 @@
   }
 
   function savePng() {
-    if (!svgEl) return;
+    if (!svgEl || !treeBounds) return;
     const cfg = $config;
-    const width = containerWidth;
-    const height = containerHeight;
+
+    // Export the full layout at scale 1 — not the current viewport
+    const width  = Math.ceil(treeBounds.x1 - treeBounds.x0);
+    const height = Math.ceil(treeBounds.y1 - treeBounds.y0);
+    const tx = -treeBounds.x0;
+    const ty = -treeBounds.y0;
 
     const svgClone = svgEl.cloneNode(true);
     svgClone.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
     svgClone.setAttribute('width', width);
     svgClone.setAttribute('height', height);
+
+    // Reset the D3 zoom transform to show the full tree at scale 1
+    const rootGroup = svgClone.querySelector('.tree-root-group');
+    if (rootGroup) rootGroup.setAttribute('transform', `translate(${tx},${ty})`);
 
     // Background
     const bgRect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
@@ -1319,11 +1327,11 @@
     styleEl.textContent = '.tree-link{fill:none}';
     svgClone.insertBefore(styleEl, svgClone.firstChild);
 
-    // Column headers rendered as SVG text so they appear in the export
+    // Column headers at full-tree coordinates (scale=1, offset by -x0/-y0)
     const headerFontSize = cfg.headerFontSize ?? 12;
     const headerColor = isDarkBg ? '#94a3b8' : (cfg.headerColor || '#334155');
     for (const h of colHeaders) {
-      const sc = h.dataMain * currentZoom.k + (h.isLR ? currentZoom.x : currentZoom.y);
+      const sc = h.dataMain + (h.isLR ? tx : ty);
       const sortArrow = h.sortOrder === 'asc' ? '↑' : '↓';
       const textEl = document.createElementNS('http://www.w3.org/2000/svg', 'text');
       textEl.textContent = `▸ by ${h.dim} ${sortArrow}`;
