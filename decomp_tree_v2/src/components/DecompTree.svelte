@@ -879,6 +879,10 @@
     } else if (!isLR && colHeaders.length) {
       tx = Math.max(tx, 160 - (x0 + 50) * scale);
     }
+    // Ensure rightmost content doesn't render behind the zoom controls panel
+    // (position: absolute; right: 16px; ~38px wide = 54px total right inset).
+    const ZOOM_PANEL_RIGHT = 54;
+    tx = Math.min(tx, (w - ZOOM_PANEL_RIGHT) - x1 * scale);
 
     d3.select(svgEl)
       .transition('fit').duration(350)
@@ -1080,22 +1084,22 @@
     if (root) doFitToView(root, cfg, { skipMinScale: true });
   }
 
+  // Hoisted so increaseMaxChildren / decreaseMaxChildren can use it too.
+  function findDeepestDrilled(node, depth = 0) {
+    if (!node.children?.length || node._collapsed) return null;
+    let best = { id: node.id, depth };
+    for (const child of node.children) {
+      const deeper = findDeepestDrilled(child, depth + 1);
+      if (deeper && deeper.depth > best.depth) best = deeper;
+    }
+    return best;
+  }
+
   // Find the deepest currently-expanded node and zoom to it + its children.
   function focusCurrentDrill() {
     const root = get(treeRoot);
     const cfg  = get(config);
     if (!root) return;
-
-    function findDeepestDrilled(node, depth = 0) {
-      if (!node.children?.length || node._collapsed) return null;
-      let best = { id: node.id, depth };
-      for (const child of node.children) {
-        const deeper = findDeepestDrilled(child, depth + 1);
-        if (deeper && deeper.depth > best.depth) best = deeper;
-      }
-      return best;
-    }
-
     const deepest = findDeepestDrilled(root);
     if (deepest) {
       _lastDrilledNodeId = deepest.id;
@@ -1112,7 +1116,16 @@
     const current = get(config);
     const newVal = Math.min(50, current.maxChildrenShown + 1);
     if (newVal === current.maxChildrenShown) return;
-    _suppressNextFit = true;
+    // Smart zoom ON: re-focus on the deepest drilled node so the updated
+    // (larger) child set is visible after rebuild. OFF: suppress fit entirely.
+    if (current.smartZoom) {
+      const root = get(treeRoot);
+      const deepest = root ? findDeepestDrilled(root) : null;
+      if (deepest) _lastDrilledNodeId = deepest.id;
+      else _suppressNextFit = true;
+    } else {
+      _suppressNextFit = true;
+    }
     await saveConfig({ ...current, maxChildrenShown: newVal });
   }
 
@@ -1120,7 +1133,16 @@
     const current = get(config);
     const newVal = Math.max(1, current.maxChildrenShown - 1);
     if (newVal === current.maxChildrenShown) return;
-    _suppressNextFit = true;
+    // Smart zoom ON: re-focus on deepest drilled node with the reduced child set.
+    // OFF: suppress fit to keep current view.
+    if (current.smartZoom) {
+      const root = get(treeRoot);
+      const deepest = root ? findDeepestDrilled(root) : null;
+      if (deepest) _lastDrilledNodeId = deepest.id;
+      else _suppressNextFit = true;
+    } else {
+      _suppressNextFit = true;
+    }
     await saveConfig({ ...current, maxChildrenShown: newVal });
   }
 
