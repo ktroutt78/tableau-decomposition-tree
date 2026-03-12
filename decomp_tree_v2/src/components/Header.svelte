@@ -4,11 +4,10 @@
   import { treeRoot, statusMessage, configPanelOpen, resolvedMeasureDisplayName, exportPngCallback } from '../stores/treeState.js';
   import { config } from '../stores/config.js';
   import { encodingMap } from '../stores/encodings.js';
-  import { reloadData, saveExpansionState, clearExpansionState, clearAllExclusions } from '../lib/tableau.js';
+  import { reloadData, saveExpansionState, clearExpansionState } from '../lib/tableau.js';
   import { getDeepestExpandedNode, serializeExpansion } from '../lib/treeEngine.js';
 
   async function reload() {
-    await clearAllExclusions();
     await reloadData();
   }
 
@@ -97,7 +96,7 @@
 
   <div class="header-right">
     {#if $treeRoot}
-      <button class="btn-ghost" on:click={reload} title="Reload data and reset all exclusions">
+      <button class="btn-ghost" on:click={reload} title="Reload data from Tableau">
         <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
           <path d="M2 7C2 4.24 4.24 2 7 2c1.66 0 3.13.82 4.04 2.07" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
           <path d="M12 7c0 2.76-2.24 5-5 5a4.99 4.99 0 01-4.04-2.07" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
