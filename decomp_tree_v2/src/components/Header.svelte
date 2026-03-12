@@ -1,13 +1,39 @@
 <script>
-  import { treeRoot, statusMessage, configPanelOpen, resolvedMeasureDisplayName } from '../stores/treeState.js';
+  import { onMount } from 'svelte';
+  import { get } from 'svelte/store';
+  import { treeRoot, statusMessage, configPanelOpen, resolvedMeasureDisplayName, exportPngCallback } from '../stores/treeState.js';
   import { config } from '../stores/config.js';
   import { encodingMap } from '../stores/encodings.js';
-  import { reloadData, saveExpansionState, clearExpansionState } from '../lib/tableau.js';
+  import { reloadData, saveExpansionState, clearExpansionState, clearAllExclusions } from '../lib/tableau.js';
   import { getDeepestExpandedNode, serializeExpansion } from '../lib/treeEngine.js';
 
   async function reload() {
+    await clearAllExclusions();
     await reloadData();
   }
+
+  // ── Fullscreen ──────────────────────────────────────────────────────────────
+  let isFullscreen = false;
+
+  function toggleFullscreen() {
+    if (!document.fullscreenElement) {
+      document.documentElement.requestFullscreen().catch(() => {});
+    } else {
+      document.exitFullscreen().catch(() => {});
+    }
+  }
+
+  // ── Save PNG ─────────────────────────────────────────────────────────────────
+  function savePng() {
+    const fn = get(exportPngCallback);
+    if (fn) fn();
+  }
+
+  onMount(() => {
+    const handler = () => { isFullscreen = !!document.fullscreenElement; };
+    document.addEventListener('fullscreenchange', handler);
+    return () => document.removeEventListener('fullscreenchange', handler);
+  });
 
   async function saveState() {
     const root = $treeRoot;
@@ -71,7 +97,7 @@
 
   <div class="header-right">
     {#if $treeRoot}
-      <button class="btn-ghost" on:click={reload} title="Reload data from Tableau">
+      <button class="btn-ghost" on:click={reload} title="Reload data and reset all exclusions">
         <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
           <path d="M2 7C2 4.24 4.24 2 7 2c1.66 0 3.13.82 4.04 2.07" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
           <path d="M12 7c0 2.76-2.24 5-5 5a4.99 4.99 0 01-4.04-2.07" stroke="currentColor" stroke-width="1.5" stroke-linecap="round"/>
@@ -79,7 +105,30 @@
         </svg>
         Reload
       </button>
+      <button class="btn-icon-round" on:click={savePng} title="Save tree as PNG" aria-label="Save tree as PNG">
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M21 15v4a2 2 0 0 1-2 2H5a2 2 0 0 1-2-2v-4"/>
+          <polyline points="7 10 12 15 17 10"/>
+          <line x1="12" y1="15" x2="12" y2="3"/>
+        </svg>
+      </button>
     {/if}
+    <button
+      class="btn-icon-round"
+      on:click={toggleFullscreen}
+      title={isFullscreen ? 'Exit full screen' : 'Full screen'}
+      aria-label={isFullscreen ? 'Exit full screen' : 'Enter full screen'}
+    >
+      {#if isFullscreen}
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M8 3v3a2 2 0 0 1-2 2H3m18 0h-3a2 2 0 0 1-2-2V3m0 18v-3a2 2 0 0 1 2-2h3M3 16h3a2 2 0 0 1 2 2v3"/>
+        </svg>
+      {:else}
+        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
+          <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/>
+        </svg>
+      {/if}
+    </button>
     {#if $config.allowSaveExpansionState}
       <button
         class="btn-ghost"

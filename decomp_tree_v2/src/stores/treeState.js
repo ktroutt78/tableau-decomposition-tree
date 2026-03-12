@@ -4,6 +4,7 @@ import { encodingMap } from './encodings.js';
 import { resolveMeasureDisplayName } from '../lib/formatters.js';
 
 export const treeRoot = writable(null);
+export const exportPngCallback = writable(null);
 export const pendingDrillNode = writable(null);
 export const statusMessage = writable('Connecting to Tableau...');
 export const configPanelOpen = writable(false);

@@ -238,6 +238,26 @@ export async function applyExcludeFilter(fieldName, value) {
 }
 
 /**
+ * Remove all active exclusion filters from the worksheet.
+ * Called by the Reload button to reset excluded items.
+ */
+export async function clearAllExclusions() {
+  if (typeof tableau === 'undefined') return;
+  const ws = tableau.extensions.worksheetContent?.worksheet;
+  if (!ws) return;
+  try {
+    const filters = await ws.getFiltersAsync();
+    const excludeFilters = filters.filter(f => f.isExcludeMode && f.appliedValues?.length > 0);
+    await Promise.all(
+      excludeFilters.map(f => ws.applyFilterAsync(f.fieldName, [], tableau.FilterUpdateType.All))
+    );
+    console.log('[DecompTree] All exclusions cleared');
+  } catch (e) {
+    console.warn('[DecompTree] clearAllExclusions failed:', e);
+  }
+}
+
+/**
  * Return all currently active exclusion filter values on the worksheet.
  * Returns an array of { fieldName, value } objects.
  */

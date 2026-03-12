@@ -2,7 +2,7 @@
   import { onMount } from 'svelte';
   import { get } from 'svelte/store';
   import * as d3 from 'd3';
-  import { treeRoot, pendingDrillNode, statusMessage, selectedNodeInfo, resolvedMeasureDisplayName, configPanelOpen } from '../stores/treeState.js';
+  import { treeRoot, pendingDrillNode, statusMessage, selectedNodeInfo, resolvedMeasureDisplayName, configPanelOpen, exportPngCallback } from '../stores/treeState.js';
   import { selectMarksForFilter, clearMarkSelection, applyExcludeFilter, getActiveExclusions, removeExclusionValue } from '../lib/tableau.js';
   import { config, saveConfig } from '../stores/config.js';
   import { encodingMap } from '../stores/encodings.js';
@@ -178,7 +178,8 @@
         .attr('stroke-linecap', resolveLinkStrokeLinecap(cfg));
     });
 
-    return () => { unsubRoot(); unsubConfig(); unsubSelected(); unsubResolved(); };
+    exportPngCallback.set(savePng);
+    return () => { exportPngCallback.set(null); unsubRoot(); unsubConfig(); unsubSelected(); unsubResolved(); };
   });
 
   // Split `text` into lines that fit within `maxWidth` pixels (approximate char-width method).
@@ -1293,6 +1294,77 @@
     const dimField = (encMap.breakdown || []).find(f => f.name === node._drillDimension);
     const fieldName = dimField?.fieldName || node._drillDimension;
     await applyExcludeFilter(fieldName, node.label);
+  }
+
+  function savePng() {
+    if (!svgEl) return;
+    const cfg = $config;
+    const width = containerWidth;
+    const height = containerHeight;
+
+    const svgClone = svgEl.cloneNode(true);
+    svgClone.setAttribute('xmlns', 'http://www.w3.org/2000/svg');
+    svgClone.setAttribute('width', width);
+    svgClone.setAttribute('height', height);
+
+    // Background
+    const bgRect = document.createElementNS('http://www.w3.org/2000/svg', 'rect');
+    bgRect.setAttribute('width', '100%');
+    bgRect.setAttribute('height', '100%');
+    bgRect.setAttribute('fill', cfg.bgColor || '#ffffff');
+    svgClone.insertBefore(bgRect, svgClone.firstChild);
+
+    // fill:none for links prevents the default black fill in the canvas context
+    const styleEl = document.createElementNS('http://www.w3.org/2000/svg', 'style');
+    styleEl.textContent = '.tree-link{fill:none}';
+    svgClone.insertBefore(styleEl, svgClone.firstChild);
+
+    // Column headers rendered as SVG text so they appear in the export
+    const headerFontSize = cfg.headerFontSize ?? 12;
+    const headerColor = isDarkBg ? '#94a3b8' : (cfg.headerColor || '#334155');
+    for (const h of colHeaders) {
+      const sc = h.dataMain * currentZoom.k + (h.isLR ? currentZoom.x : currentZoom.y);
+      const sortArrow = h.sortOrder === 'asc' ? '↑' : '↓';
+      const textEl = document.createElementNS('http://www.w3.org/2000/svg', 'text');
+      textEl.textContent = `▸ by ${h.dim} ${sortArrow}`;
+      textEl.setAttribute('font-size', headerFontSize);
+      textEl.setAttribute('fill', headerColor);
+      textEl.setAttribute('font-family', 'system-ui, -apple-system, sans-serif');
+      if (h.isLR) {
+        textEl.setAttribute('x', sc);
+        textEl.setAttribute('y', headerFontSize + 4);
+        textEl.setAttribute('text-anchor', 'middle');
+      } else {
+        textEl.setAttribute('x', 8);
+        textEl.setAttribute('y', sc);
+        textEl.setAttribute('text-anchor', 'start');
+        textEl.setAttribute('dominant-baseline', 'middle');
+      }
+      svgClone.appendChild(textEl);
+    }
+
+    const serializer = new XMLSerializer();
+    const svgStr = serializer.serializeToString(svgClone);
+    const blob = new Blob([svgStr], { type: 'image/svg+xml;charset=utf-8' });
+    const url = URL.createObjectURL(blob);
+    const img = new Image();
+    img.onload = () => {
+      const canvas = document.createElement('canvas');
+      canvas.width = width;
+      canvas.height = height;
+      canvas.getContext('2d').drawImage(img, 0, 0);
+      URL.revokeObjectURL(url);
+      canvas.toBlob(pngBlob => {
+        const a = document.createElement('a');
+        a.href = URL.createObjectURL(pngBlob);
+        a.download = 'decomposition-tree.png';
+        document.body.appendChild(a);
+        a.click();
+        document.body.removeChild(a);
+        URL.revokeObjectURL(a.href);
+      }, 'image/png');
+    };
+    img.src = url;
   }
 </script>
 
