@@ -32,16 +32,20 @@
 
   let initialized = false;
   let _prevValueName = null;
+  let _initFallback = null; // holds the current fallback timer handle
 
   function onDataReady(encMap, rows, { forceReset = true } = {}) {
-    // Only mark initialized when Tableau has returned a valid measure encoding.
-    // On dashboards, getVisualSpecificationAsync may return empty on the first
-    // call (timing artifact), causing EmptyState to flash before SummaryDataChanged
-    // fires with real data. Keep showing the spinner until a non-empty encMap arrives.
-    // The fallback timer in onMount ensures genuinely unconfigured sheets
-    // still reach EmptyState after 5 seconds.
     if (encMap.value?.length > 0) {
+      // Valid encoding received — mark ready and cancel any pending fallback.
       initialized = true;
+      if (_initFallback) { clearTimeout(_initFallback); _initFallback = null; }
+    } else {
+      // Empty encoding: Tableau called back but spec isn't ready yet (timing
+      // artifact on dashboards). Reset the fallback to 20s from NOW so slow
+      // loads don't flip to EmptyState before SummaryDataChanged arrives.
+      // A genuinely unconfigured sheet will hit this timeout eventually.
+      if (_initFallback) clearTimeout(_initFallback);
+      _initFallback = setTimeout(() => { if (!initialized) initialized = true; }, 20000);
     }
     const newValueName = encMap.value?.[0]?.name ?? null;
     const measureChanged = newValueName !== _prevValueName;
@@ -101,9 +105,10 @@
   onMount(() => {
     initTableau(onDataReady);
 
-    // Fallback: if no valid encoding arrives within 5s (genuinely unconfigured
-    // extension with no SummaryDataChanged event), show the setup screen.
-    const initFallback = setTimeout(() => {
+    // Short initial fallback: if Tableau never calls onDataReady at all
+    // (e.g. offline / outside Tableau), show the setup screen after 5s.
+    // onDataReady resets this to 20s once it receives its first callback.
+    _initFallback = setTimeout(() => {
       if (!initialized) initialized = true;
     }, 5000);
 
@@ -127,7 +132,7 @@
       _prevExcludeNulls = cfg.excludeNulls;
     });
 
-    return () => { unsubConfig(); clearTimeout(initFallback); };
+    return () => { unsubConfig(); if (_initFallback) clearTimeout(_initFallback); };
   });
 </script>
 
