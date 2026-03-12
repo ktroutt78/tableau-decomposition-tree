@@ -34,7 +34,15 @@
   let _prevValueName = null;
 
   function onDataReady(encMap, rows, { forceReset = true } = {}) {
-    initialized = true;
+    // Only mark initialized when Tableau has returned a valid measure encoding.
+    // On dashboards, getVisualSpecificationAsync may return empty on the first
+    // call (timing artifact), causing EmptyState to flash before SummaryDataChanged
+    // fires with real data. Keep showing the spinner until a non-empty encMap arrives.
+    // The fallback timer in onMount ensures genuinely unconfigured sheets
+    // still reach EmptyState after 5 seconds.
+    if (encMap.value?.length > 0) {
+      initialized = true;
+    }
     const newValueName = encMap.value?.[0]?.name ?? null;
     const measureChanged = newValueName !== _prevValueName;
 
@@ -93,6 +101,12 @@
   onMount(() => {
     initTableau(onDataReady);
 
+    // Fallback: if no valid encoding arrives within 5s (genuinely unconfigured
+    // extension with no SummaryDataChanged event), show the setup screen.
+    const initFallback = setTimeout(() => {
+      if (!initialized) initialized = true;
+    }, 5000);
+
     // When maxChildrenShown or excludeNulls changes (user saves Settings),
     // re-drill the existing tree so the update applies immediately without
     // requiring a collapse/expand cycle.
@@ -113,7 +127,7 @@
       _prevExcludeNulls = cfg.excludeNulls;
     });
 
-    return () => unsubConfig();
+    return () => { unsubConfig(); clearTimeout(initFallback); };
   });
 </script>
 

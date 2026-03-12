@@ -93,6 +93,9 @@
       {:else}
         Click + to drill into an attribute
       {/if}
+      {#if data.parent}
+        <span class="tooltip-hint-secondary">Right-click to exclude</span>
+      {/if}
     </div>
   </div>
 {/if}
@@ -184,6 +187,13 @@
     border-top: 1px solid var(--color-border-subtle);
     font-size: var(--text-xs);
     color: var(--color-text-primary);
+    display: flex;
+    flex-direction: column;
+    gap: 2px;
+  }
+
+  .tooltip-hint-secondary {
+    color: var(--color-text-muted);
   }
 
 </style>
