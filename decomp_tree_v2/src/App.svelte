@@ -30,9 +30,11 @@
        --color-accent-subtle:rgba(74,108,247,0.18);`
     : '';
 
+  let initialized = false;
   let _prevValueName = null;
 
   function onDataReady(encMap, rows, { forceReset = true } = {}) {
+    initialized = true;
     const newValueName = encMap.value?.[0]?.name ?? null;
     const measureChanged = newValueName !== _prevValueName;
 
@@ -121,7 +123,7 @@
   <main class="viz-area">
     {#if $isReadyToRender && $treeRoot}
       <DecompTree />
-    {:else if $isReadyToRender}
+    {:else if !initialized || $isReadyToRender}
       <div class="loading-state">
         <svg class="spinner" width="32" height="32" viewBox="0 0 32 32" fill="none">
           <circle cx="16" cy="16" r="12" stroke="var(--color-border)" stroke-width="3"/>
