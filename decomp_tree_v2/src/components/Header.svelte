@@ -1,5 +1,4 @@
 <script>
-  import { onMount } from 'svelte';
   import { get } from 'svelte/store';
   import { treeRoot, statusMessage, configPanelOpen, resolvedMeasureDisplayName, exportPngCallback } from '../stores/treeState.js';
   import { config } from '../stores/config.js';
@@ -11,28 +10,11 @@
     await reloadData();
   }
 
-  // ── Fullscreen ──────────────────────────────────────────────────────────────
-  let isFullscreen = false;
-
-  function toggleFullscreen() {
-    if (!document.fullscreenElement) {
-      document.documentElement.requestFullscreen().catch(() => {});
-    } else {
-      document.exitFullscreen().catch(() => {});
-    }
-  }
-
   // ── Save PNG ─────────────────────────────────────────────────────────────────
   function savePng() {
     const fn = get(exportPngCallback);
     if (fn) fn();
   }
-
-  onMount(() => {
-    const handler = () => { isFullscreen = !!document.fullscreenElement; };
-    document.addEventListener('fullscreenchange', handler);
-    return () => document.removeEventListener('fullscreenchange', handler);
-  });
 
   async function saveState() {
     const root = $treeRoot;
@@ -112,22 +94,6 @@
         </svg>
       </button>
     {/if}
-    <button
-      class="btn-icon-round"
-      on:click={toggleFullscreen}
-      title={isFullscreen ? 'Exit full screen' : 'Full screen'}
-      aria-label={isFullscreen ? 'Exit full screen' : 'Enter full screen'}
-    >
-      {#if isFullscreen}
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M8 3v3a2 2 0 0 1-2 2H3m18 0h-3a2 2 0 0 1-2-2V3m0 18v-3a2 2 0 0 1 2-2h3M3 16h3a2 2 0 0 1 2 2v3"/>
-        </svg>
-      {:else}
-        <svg width="16" height="16" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="1.8" stroke-linecap="round" stroke-linejoin="round">
-          <path d="M8 3H5a2 2 0 0 0-2 2v3m18 0V5a2 2 0 0 0-2-2h-3m0 18h3a2 2 0 0 0 2-2v-3M3 16v3a2 2 0 0 0 2 2h3"/>
-        </svg>
-      {/if}
-    </button>
     {#if $config.allowSaveExpansionState}
       <button
         class="btn-ghost"
