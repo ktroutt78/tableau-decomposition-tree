@@ -1092,7 +1092,10 @@
     tooltipVisible = true;
     const rect = containerEl.getBoundingClientRect();
     tooltipX = event.clientX - rect.left + 14;
-    tooltipY = event.clientY - rect.top - ($config.orientation === 'TB' ? 180 : 14);
+    // LR: appear above-right of cursor (clears the bar to the left).
+    // TB: appear below-right of cursor, near the + button; existing adjustedX
+    //     flips to the left automatically when near the right edge.
+    tooltipY = event.clientY - rect.top + ($config.orientation === 'TB' ? 20 : -14);
   }
 
   function zoomIn() {
