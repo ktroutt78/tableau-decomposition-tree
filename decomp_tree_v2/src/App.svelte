@@ -121,6 +121,14 @@
   <main class="viz-area">
     {#if $isReadyToRender && $treeRoot}
       <DecompTree />
+    {:else if $isReadyToRender}
+      <div class="loading-state">
+        <svg class="spinner" width="32" height="32" viewBox="0 0 32 32" fill="none">
+          <circle cx="16" cy="16" r="12" stroke="var(--color-border)" stroke-width="3"/>
+          <path d="M16 4a12 12 0 0 1 12 12" stroke="var(--color-accent)" stroke-width="3" stroke-linecap="round"/>
+        </svg>
+        <span>Loading tree…</span>
+      </div>
     {:else}
       <EmptyState />
     {/if}
@@ -148,5 +156,24 @@
     min-height: 0;
   }
 
+  .loading-state {
+    width: 100%;
+    height: 100%;
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    justify-content: center;
+    gap: var(--space-3);
+    color: var(--color-text-muted);
+    font-size: var(--text-sm);
+  }
 
+  .spinner {
+    animation: spin 0.9s linear infinite;
+  }
+
+  @keyframes spin {
+    from { transform: rotate(0deg); }
+    to   { transform: rotate(360deg); }
+  }
 </style>
