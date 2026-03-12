@@ -105,12 +105,12 @@
   onMount(() => {
     initTableau(onDataReady);
 
-    // Short initial fallback: if Tableau never calls onDataReady at all
-    // (e.g. offline / outside Tableau), show the setup screen after 5s.
-    // onDataReady resets this to 20s once it receives its first callback.
+    // Initial fallback: if Tableau never calls onDataReady at all within 30s
+    // (e.g. offline / outside Tableau), show the setup screen.
+    // onDataReady resets this to 20s-from-callback once it fires.
     _initFallback = setTimeout(() => {
       if (!initialized) initialized = true;
-    }, 5000);
+    }, 30000);
 
     // When maxChildrenShown or excludeNulls changes (user saves Settings),
     // re-drill the existing tree so the update applies immediately without

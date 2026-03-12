@@ -838,6 +838,10 @@
 
     const w = containerWidth  || 800;
     const h = containerHeight || 600;
+    // Reserve right-side clearance for the zoom controls panel
+    // (position: absolute; right: 16px; ~38px wide = 54px total inset).
+    const ZOOM_PANEL_RIGHT = 54;
+    const wAvail = w - ZOOM_PANEL_RIGHT;
     // Cap at 1.2 for focused drills to prevent over-zooming on a small set of nodes
     const maxScale = usedSmartZoom ? 1.2 : 0.92;
     // Dynamic minimum: stop zooming out once the viewport shows ~8 children (LR) or
@@ -849,7 +853,7 @@
       ? h / (8 * siblingSlot)
       : w / (9 * siblingSlot);
 
-    const naturalScale = Math.min(maxScale, Math.min(w / tw, h / th));
+    const naturalScale = Math.min(maxScale, Math.min(wAvail / tw, h / th));
     // skipMinScale: explicit "Fit to view" — show the whole tree regardless of size.
     // Otherwise clamp so auto-fits never zoom out past the readable floor.
     const scale = skipMinScale ? naturalScale : Math.max(MIN_READABLE_SCALE, naturalScale);
@@ -879,9 +883,7 @@
     } else if (!isLR && colHeaders.length) {
       tx = Math.max(tx, 160 - (x0 + 50) * scale);
     }
-    // Ensure rightmost content doesn't render behind the zoom controls panel
-    // (position: absolute; right: 16px; ~38px wide = 54px total right inset).
-    const ZOOM_PANEL_RIGHT = 54;
+    // Safety clamp: ensure rightmost content edge stays clear of the zoom panel.
     tx = Math.min(tx, (w - ZOOM_PANEL_RIGHT) - x1 * scale);
 
     d3.select(svgEl)
