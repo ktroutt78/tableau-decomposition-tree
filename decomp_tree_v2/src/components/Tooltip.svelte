@@ -94,7 +94,7 @@
         Click + to drill into an attribute
       {/if}
       {#if data.depth > 0}
-        <span class="tooltip-hint-secondary">Right-click to exclude</span>
+        <span class="tooltip-hint-secondary">Right-click for filter options</span>
       {/if}
     </div>
   </div>
@@ -193,7 +193,7 @@
   }
 
   .tooltip-hint-secondary {
-    color: var(--color-text-muted);
+    color: var(--color-text-secondary);
   }
 
 </style>

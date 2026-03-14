@@ -346,6 +346,14 @@
 
         <div class="field-group">
           <div class="range-header">
+            <label class="field-label" for="nodeWidth">Node width</label>
+            <span class="range-val">{draft.nodeWidth}px</span>
+          </div>
+          <input id="nodeWidth" type="range" min="140" max="480" step="20" bind:value={draft.nodeWidth} on:input={debouncedSave} class="range-input"/>
+        </div>
+
+        <div class="field-group">
+          <div class="range-header">
             <label class="field-label" for="barHeight">Bar thickness</label>
             <span class="range-val">{draft.barHeight}px</span>
           </div>

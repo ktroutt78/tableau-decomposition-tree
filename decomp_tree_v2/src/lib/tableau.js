@@ -11,6 +11,12 @@ let worksheet = null;
 let _onDataReady = null;
 let _isMockMode = false;
 
+// In-memory tracking of keep-only filters applied by this extension session.
+// fieldName -> Set<value>. Exclude filters are read directly from Tableau (isExcludeMode is
+// a reliable distinguishing flag). Keep-only filters look identical to pre-existing dashboard
+// include filters at the API level, so we track them ourselves instead of reading from Tableau.
+const _keepOnlyFilters = new Map();
+
 
 export async function initTableau(onDataReady) {
   _onDataReady = onDataReady;
@@ -306,6 +312,103 @@ export async function removeExclusionValue(fieldName, value) {
     console.log(`[DecompTree] Removed exclusion: ${fieldName} != "${value}"`);
   } catch (e) {
     console.warn('[DecompTree] removeExclusionValue failed:', e);
+  }
+}
+
+/**
+ * Apply a categorical include ("keep only") filter to the host worksheet.
+ * Adds `value` to the include filter for `fieldName`. Accumulates with existing keep-only values.
+ */
+export async function applyKeepOnlyFilter(fieldName, value) {
+  if (typeof tableau === 'undefined') return;
+  const ws = tableau.extensions.worksheetContent?.worksheet;
+  if (!ws) {
+    console.warn('[DecompTree] applyKeepOnlyFilter: worksheet not available');
+    return;
+  }
+  try {
+    console.log(`[DecompTree] applyKeepOnlyFilter: ${fieldName} = "${value}"`);
+    await ws.applyFilterAsync(fieldName, [value], tableau.FilterUpdateType.Replace);
+    if (!_keepOnlyFilters.has(fieldName)) _keepOnlyFilters.set(fieldName, new Set());
+    _keepOnlyFilters.get(fieldName).add(value);
+    console.log(`[DecompTree] Keep-only filter applied: ${fieldName} = "${value}"`);
+  } catch (e) {
+    console.warn('[DecompTree] applyKeepOnlyFilter failed:', e);
+  }
+}
+
+/**
+ * Return all active filter values applied by this extension (both exclude and keep-only).
+ * Returns an array of { fieldName, value, mode } where mode is 'exclude' or 'keep'.
+ *
+ * Exclude filters are read from Tableau — isExcludeMode is a unique flag only set by this
+ * extension's right-click action, not by normal Tableau dashboard filters.
+ * Keep-only filters are read from the in-memory _keepOnlyFilters map, not from Tableau,
+ * because include filters look identical to pre-existing dashboard filters at the API level.
+ */
+export async function getActiveFilters() {
+  const result = [];
+
+  // Exclude filters — read from Tableau API (isExcludeMode is a reliable extension-only flag)
+  if (typeof tableau !== 'undefined') {
+    const ws = tableau.extensions.worksheetContent?.worksheet;
+    if (ws) {
+      try {
+        const filters = await ws.getFiltersAsync();
+        for (const f of filters) {
+          if (f.isExcludeMode && f.appliedValues?.length > 0) {
+            for (const v of f.appliedValues) {
+              result.push({ fieldName: f.fieldName, value: v.formattedValue ?? v.value, mode: 'exclude' });
+            }
+          }
+        }
+      } catch (e) {
+        console.warn('[DecompTree] getActiveFilters (excludes) failed:', e);
+      }
+    }
+  }
+
+  // Keep-only filters — read from in-memory tracking only
+  for (const [fieldName, values] of _keepOnlyFilters) {
+    for (const value of values) {
+      result.push({ fieldName, value, mode: 'keep' });
+    }
+  }
+
+  return result;
+}
+
+/**
+ * Remove a single value from either an exclude or keep-only filter.
+ * If it was the last value for that field, removes the filter entirely.
+ * @param {string} fieldName
+ * @param {string} value
+ * @param {'exclude'|'keep'} mode
+ */
+export async function removeFilterValue(fieldName, value, mode) {
+  if (typeof tableau === 'undefined') return;
+  const ws = tableau.extensions.worksheetContent?.worksheet;
+  if (!ws) return;
+  const isExcludeMode = mode === 'exclude';
+  try {
+    const filters = await ws.getFiltersAsync();
+    const existing = filters.find(f => f.fieldName === fieldName && f.isExcludeMode === isExcludeMode);
+    if (!existing) return;
+    const remaining = existing.appliedValues
+      .map(v => v.formattedValue ?? v.value)
+      .filter(v => v !== value);
+    if (remaining.length === 0) {
+      await ws.applyFilterAsync(fieldName, [], tableau.FilterUpdateType.All);
+    } else {
+      await ws.applyFilterAsync(fieldName, remaining, tableau.FilterUpdateType.Replace, { isExcludeMode });
+    }
+    if (mode === 'keep') {
+      _keepOnlyFilters.get(fieldName)?.delete(value);
+      if (_keepOnlyFilters.get(fieldName)?.size === 0) _keepOnlyFilters.delete(fieldName);
+    }
+    console.log(`[DecompTree] Removed ${mode} filter: ${fieldName} "${value}"`);
+  } catch (e) {
+    console.warn('[DecompTree] removeFilterValue failed:', e);
   }
 }
 

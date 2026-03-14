@@ -1,17 +1,14 @@
 # Next Actions
 
 ## RESUME FROM CHECKPOINT
-→ [2026-03-11 Session 1 Checkpoint](docs/sessions/2026-03-11-session-1-checkpoint.md)
+→ [2026-03-13 Session 1 Checkpoint](docs/sessions/2026-03-13-session-1-checkpoint.md)
 
 ---
 
 ## Next 3 Actions
 
-1. **Implement Exclude Items feature** — plan at `.claude/plans/synchronous-herding-cherny.md`
-   - `src/stores/treeState.js` — add `excludedLabels` writable store
-   - `src/components/Tooltip.svelte` — add exclude button, dispatcher, pointer-events fix
-   - `src/components/DecompTree.svelte` — filter in visibleChildren, subscribe, pill/panel UI
+1. **Commit and push all pending local changes** — run `git add` + commit covering: Keep Only filter, Active Filters panel, label wrapping, node width slider, tooltip hint fix. Then `git push` to deploy.
 
-2. **Test dark mode in Tableau** — verify heading text, expand button color, col-header labels
+2. **Production QA: label 2-line wrapping** — test on the real workbook to verify label wrap looks correct, value line is not overlapping, and fit-to-view / smart zoom still work with taller nodes.
 
-3. **WCAG contrast check (deferred)** — binary isDarkBg threshold may miss mid-range backgrounds
+3. **Production QA: Keep Only filter** — verify "Keep only this item" applies correctly on the real workbook, Active Filters panel shows the entry, and the × remove button clears it properly.

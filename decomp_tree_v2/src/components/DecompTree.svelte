@@ -3,7 +3,7 @@
   import { get } from 'svelte/store';
   import * as d3 from 'd3';
   import { treeRoot, pendingDrillNode, statusMessage, selectedNodeInfo, resolvedMeasureDisplayName, configPanelOpen, exportPngCallback } from '../stores/treeState.js';
-  import { selectMarksForFilter, clearMarkSelection, applyExcludeFilter, getActiveExclusions, removeExclusionValue } from '../lib/tableau.js';
+  import { selectMarksForFilter, clearMarkSelection, applyExcludeFilter, applyKeepOnlyFilter, getActiveFilters, removeFilterValue } from '../lib/tableau.js';
   import { config, saveConfig } from '../stores/config.js';
   import { encodingMap } from '../stores/encodings.js';
   import { drillDown, toggleCollapse, updateNodeInTree, findParent, toggleSortAtDimension, reapplyExpansion } from '../lib/treeEngine.js';
@@ -26,13 +26,13 @@
   let contextMenuY = 0;
   let contextMenuNode = null;
 
-  let activeExclusions = [];
+  let activeFilters = [];
   let exclusionsOpen = false;
 
-  // Reload exclusion list whenever tree data changes (fires after every filter change)
-  $: $treeRoot, refreshExclusions();
-  function refreshExclusions() {
-    getActiveExclusions().then(e => { activeExclusions = e; });
+  // Reload filter list whenever tree data changes (fires after every filter change)
+  $: $treeRoot, refreshFilters();
+  function refreshFilters() {
+    getActiveFilters().then(f => { activeFilters = f; });
   }
 
   let helpOpen = false;
@@ -49,14 +49,14 @@
 
   // Compute layout geometry from a given bar height
   function nodeGeometry(barH) {
-    const nodeH  = barH + TEXT_GAP + LINE_H * 2 + BOT_PAD;
+    const nodeH  = barH + TEXT_GAP + LINE_H * 3 + BOT_PAD;
     const barTopY = -nodeH / 2;
     return {
       nodeH,
       barTopY,
       barCY:  barTopY + barH / 2,
       text1Y: barTopY + barH + TEXT_GAP + 13,
-      text2Y: barTopY + barH + TEXT_GAP + 13 + LINE_H,
+      text2Y: barTopY + barH + TEXT_GAP + 13 + LINE_H * 2,
     };
   }
 
@@ -441,7 +441,8 @@
 
     // Line 1: "Label (pct%)"
     nodeEnter.append('text').attr('class', 'bar-label')
-      .attr('text-anchor', 'start');
+      .attr('text-anchor', 'start')
+      .append('title'); // native SVG tooltip — full label on hover
 
     // Line 2: "MeasureName: value"
     nodeEnter.append('text').attr('class', 'bar-value-text')
@@ -502,12 +503,17 @@
       .each(function(d) {
         const el = d3.select(this);
         if (isLR) {
-          // LR: single-line text — D3's .text() clears any existing tspans automatically
-          if (d.depth === 0) { el.text(valueName); return; }
-          const label = truncate(d.data.label, 24);
-          if (labelMode === 'value') { el.text(label); return; }
+          // LR: wrap label into up to 2 tspan lines
+          if (d.depth === 0) { el.text(''); el.append('tspan').attr('x', -nw/2+6).text(valueName); return; }
           const pct = (d.data.percentOfParent ?? 100).toFixed(0);
-          el.text(`${label} (${pct}%)`);
+          const fullText = labelMode === 'value'
+            ? d.data.label
+            : `${d.data.label} (${pct}%)`;
+          const lines = computeWrappedLines(fullText, nw - 12, fontSize, 2);
+          el.text('');
+          lines.forEach((line, i) => {
+            el.append('tspan').attr('x', -nw/2+6).attr('dy', i === 0 ? 0 : LINE_H).text(line);
+          });
         } else {
           // TB: wrap label into tspan elements so text doesn't overflow into adjacent bar
           el.text(''); // clears existing text/tspans
@@ -520,6 +526,10 @@
           });
         }
       });
+
+    // Update native tooltip on bar-label so full text is readable on hover
+    nodeUpdate.select('.bar-label').select('title')
+      .text(d => d.depth === 0 ? valueName : d.data.label);
 
     // Value line 2:
     //   root        → formatted value only (measure name is already on line 1)
@@ -1258,9 +1268,8 @@
     if (e.key === 'Escape') { helpOpen = false; exclusionsOpen = false; contextMenuVisible = false; }
   }
 
-  async function handleRemoveExclusion(fieldName, value) {
-    await removeExclusionValue(fieldName, value);
-    // Panel stays open — list updates reactively when treeRoot refreshes
+  async function handleRemoveFilter(fieldName, value, mode) {
+    await removeFilterValue(fieldName, value, mode);
   }
 
   function handleDrillSelect(dimName, sortOrder = 'desc') {
@@ -1294,6 +1303,16 @@
     const dimField = (encMap.breakdown || []).find(f => f.name === node._drillDimension);
     const fieldName = dimField?.fieldName || node._drillDimension;
     await applyExcludeFilter(fieldName, node.label);
+  }
+
+  async function handleContextMenuKeepOnly() {
+    const node = contextMenuNode;
+    contextMenuVisible = false;
+    contextMenuNode = null;
+    const encMap = get(encodingMap);
+    const dimField = (encMap.breakdown || []).find(f => f.name === node._drillDimension);
+    const fieldName = dimField?.fieldName || node._drillDimension;
+    await applyKeepOnlyFilter(fieldName, node.label);
   }
 
   function savePng() {
@@ -1436,24 +1455,25 @@
 
   <!-- Help button + panel — upper right corner -->
   <div class="help-widget">
-    {#if activeExclusions.length > 0}
+    {#if activeFilters.length > 0}
       <div class="excl-widget">
         <!-- svelte-ignore a11y-click-events-have-key-events a11y-no-static-element-interactions -->
         <button
           class="excl-pill"
           class:excl-pill--open={exclusionsOpen}
           on:click|stopPropagation={() => { exclusionsOpen = !exclusionsOpen; helpOpen = false; }}
-          title="Active exclusions"
+          title="Active filters"
           aria-expanded={exclusionsOpen}
-        >Excluded ({activeExclusions.length})</button>
+        >Active filters ({activeFilters.length})</button>
         {#if exclusionsOpen}
-          <div class="excl-panel" role="dialog" aria-label="Active exclusions">
-            <div class="excl-panel-title">Active exclusions</div>
+          <div class="excl-panel" role="dialog" aria-label="Active filters">
+            <div class="excl-panel-title">Active filters</div>
             <ul class="excl-list">
-              {#each activeExclusions as excl (excl.fieldName + '|' + excl.value)}
+              {#each activeFilters as f (f.fieldName + '|' + f.value + '|' + f.mode)}
                 <li class="excl-item">
-                  <span class="excl-item-label" title={excl.fieldName}>{excl.fieldName}: {excl.value}</span>
-                  <button class="excl-remove-btn" title="Restore" on:click={() => handleRemoveExclusion(excl.fieldName, excl.value)}>×</button>
+                  <span class="filter-mode-badge filter-mode-badge--{f.mode}">{f.mode === 'keep' ? 'Keep' : 'Exclude'}</span>
+                  <span class="excl-item-label" title="{f.fieldName}: {f.value}">{f.fieldName}: {f.value}</span>
+                  <button class="excl-remove-btn" title="Remove filter" on:click={() => handleRemoveFilter(f.fieldName, f.value, f.mode)}>×</button>
                 </li>
               {/each}
             </ul>
@@ -1522,7 +1542,7 @@
           </li>
           <li>
             <span class="help-chip help-chip--ctx">⋮</span>
-            <strong>Right-click</strong> a bar to exclude that item from the data
+            <strong>Right-click</strong> a bar to keep only or exclude that item
           </li>
         </ul>
 
@@ -1667,6 +1687,9 @@
     <!-- svelte-ignore a11y-click-events-have-key-events a11y-no-static-element-interactions -->
     <div class="context-backdrop" on:click={() => { contextMenuVisible = false; }}></div>
     <div class="context-menu" style="left: {contextMenuX}px; top: {contextMenuY}px">
+      <button class="context-menu-item context-menu-item--keep" on:click={handleContextMenuKeepOnly}>
+        Keep only this item
+      </button>
       <button class="context-menu-item context-menu-item--danger" on:click={handleContextMenuExclude}>
         Exclude this item
       </button>
@@ -2040,9 +2063,9 @@
     height: 28px;
     padding: 0 10px;
     border-radius: 14px;
-    background: #fef2f2;
-    border: 1px solid #fca5a5;
-    color: #dc2626;
+    background: #eff6ff;
+    border: 1px solid #93c5fd;
+    color: #1d4ed8;
     font-size: 11px;
     font-weight: 600;
     cursor: pointer;
@@ -2053,9 +2076,31 @@
 
   .excl-pill:hover,
   .excl-pill--open {
-    background: #dc2626;
+    background: #1d4ed8;
     color: #fff;
-    border-color: #dc2626;
+    border-color: #1d4ed8;
+  }
+
+  .filter-mode-badge {
+    flex-shrink: 0;
+    font-size: 10px;
+    font-weight: 700;
+    padding: 1px 5px;
+    border-radius: 4px;
+    text-transform: uppercase;
+    letter-spacing: 0.04em;
+  }
+
+  .filter-mode-badge--keep {
+    background: #eff6ff;
+    color: #1d4ed8;
+    border: 1px solid #93c5fd;
+  }
+
+  .filter-mode-badge--exclude {
+    background: #fef2f2;
+    color: #dc2626;
+    border: 1px solid #fca5a5;
   }
 
   .excl-panel {
@@ -2172,6 +2217,14 @@
     cursor: pointer;
     text-align: left;
     transition: background 0.1s;
+  }
+
+  .context-menu-item--keep {
+    color: #1d4ed8;
+  }
+
+  .context-menu-item--keep:hover {
+    background: #eff6ff;
   }
 
   .context-menu-item--danger {
