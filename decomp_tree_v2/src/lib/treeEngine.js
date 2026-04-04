@@ -35,28 +35,40 @@ export function buildRootNode(rows, encMap) {
   const valueName = valueField.name;
   const breakdownFields = encMap.breakdown || [];
 
-  // For non-additive measures (e.g. COUNTD), summing per-slice values overstates the total.
-  // If Tableau sent a grand-total row (all breakdown dims null/empty), use that value for the root.
+  // Separate rows into: grand-total (all breakdowns empty), leaf (all breakdowns populated),
+  // and subtotals (some empty, some populated). Subtotals cause double-counting in drillDown
+  // and must be excluded. This matters for aggregate calcs (e.g. SUM(A) - SUM(B)) where
+  // Tableau may return intermediate subtotal rows in the summary data.
+  let grandTotalValue = null;
+  let leafRows = rows;
+
+  if (breakdownFields.length > 0) {
+    const classified = classifyRows(rows, breakdownFields);
+    grandTotalValue = classified.grandTotalValue;
+    leafRows = classified.leafRows;
+    const skipped = rows.length - leafRows.length - (grandTotalValue ? 1 : 0);
+    if (skipped > 0) {
+      console.log(`[DecompTree] Filtered out ${skipped} subtotal rows to prevent double-counting`);
+    }
+  }
+
+  // Use grand-total row value if available (correct for non-additive measures like COUNTD)
   let total = null;
-  for (const row of rows) {
-    const allBreakdownEmpty = breakdownFields.length === 0 || breakdownFields.every(f => isBreakdownEmpty(row, f));
-    if (allBreakdownEmpty) {
-      const dv = getFieldValue(row, valueField);
-      if (dv !== undefined && dv !== null) {
-        const v = typeof dv === 'object' ? dv.value : dv;
-        if (v !== null && !isNaN(Number(v))) {
-          total = Number(v);
-          break;
-        }
+  if (grandTotalValue !== null) {
+    const dv = getFieldValue(grandTotalValue, valueField);
+    if (dv !== undefined && dv !== null) {
+      const v = typeof dv === 'object' ? dv.value : dv;
+      if (v !== null && !isNaN(Number(v))) {
+        total = Number(v);
       }
     }
   }
 
-  // No total row: fall back to summing (correct for SUM, wrong for COUNTD / non-additive)
+  // No total row: fall back to summing leaf rows (correct for SUM, wrong for COUNTD / non-additive)
   let count = 0;
   if (total === null) {
     total = 0;
-    for (const row of rows) {
+    for (const row of leafRows) {
       const dv = getFieldValue(row, valueField);
       if (dv !== undefined && dv !== null) {
         const v = typeof dv === 'object' ? dv.value : dv;
@@ -67,7 +79,7 @@ export function buildRootNode(rows, encMap) {
       }
     }
   } else {
-    count = rows.length;
+    count = leafRows.length;
   }
 
   return {
@@ -80,11 +92,43 @@ export function buildRootNode(rows, encMap) {
     dimensionPath: [],
     children: null,
     _collapsed: false,
-    _rows: rows,
-    _tooltipData: extractTooltipData(rows, encMap),
-    _colorValue: extractColorValue(rows, encMap),
+    _rows: leafRows,
+    _tooltipData: extractTooltipData(leafRows, encMap),
+    _colorValue: extractColorValue(leafRows, encMap),
     _drillDimension: null
   };
+}
+
+/**
+ * Classify rows into grand-total, leaf, and subtotal categories.
+ * - Grand-total: ALL breakdown dimensions are empty → used for root value
+ * - Leaf: ALL breakdown dimensions are populated → stored in _rows for drill-down
+ * - Subtotal: SOME empty, SOME populated → discarded to prevent double-counting
+ */
+function classifyRows(rows, breakdownFields) {
+  let grandTotalValue = null;
+  const leafRows = [];
+
+  for (const row of rows) {
+    let emptyCount = 0;
+    for (const f of breakdownFields) {
+      if (isBreakdownEmpty(row, f)) emptyCount++;
+    }
+
+    if (emptyCount === breakdownFields.length) {
+      // Grand-total row: all breakdowns empty
+      if (grandTotalValue === null) {
+        // Store the raw value field data for later extraction
+        grandTotalValue = row;
+      }
+    } else if (emptyCount === 0) {
+      // Leaf row: all breakdowns populated
+      leafRows.push(row);
+    }
+    // else: subtotal row (some empty) — skip to avoid double-counting
+  }
+
+  return { grandTotalValue, leafRows };
 }
 
 export function drillDown(node, dimensionName, encMap, maxChildren = 20, excludeNulls = false, sortOrder = 'desc') {

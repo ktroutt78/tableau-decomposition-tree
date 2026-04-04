@@ -1,14 +1,14 @@
 # Next Actions
 
 ## RESUME FROM CHECKPOINT
-→ [2026-03-13 Session 1 Checkpoint](docs/sessions/2026-03-13-session-1-checkpoint.md)
+> [2026-03-15 Session 1 Checkpoint](docs/sessions/2026-03-15-session-1-checkpoint.md)
 
 ---
 
 ## Next 3 Actions
 
-1. **Commit and push all pending local changes** — run `git add` + commit covering: Keep Only filter, Active Filters panel, label wrapping, node width slider, tooltip hint fix. Then `git push` to deploy.
+1. **Production QA: Outfit font + label wrapping** — open the real Tableau workbook, hard-refresh, verify Outfit renders correctly on node labels, header, config panel, and tooltip. Check 2-line label wrapping in LR mode doesn't overlap the value line.
 
-2. **Production QA: label 2-line wrapping** — test on the real workbook to verify label wrap looks correct, value line is not overlapping, and fit-to-view / smart zoom still work with taller nodes.
+2. **Production QA: Keep Only filter** — right-click a node, select "Keep only this item", verify the Tableau filter applies, Active Filters panel shows the entry with blue "Keep" badge, and the x remove button clears it properly.
 
-3. **Production QA: Keep Only filter** — verify "Keep only this item" applies correctly on the real workbook, Active Filters panel shows the entry, and the × remove button clears it properly.
+3. **Clean up dead code** — remove unused `clearAllExclusions` function from `src/lib/tableau.js`.

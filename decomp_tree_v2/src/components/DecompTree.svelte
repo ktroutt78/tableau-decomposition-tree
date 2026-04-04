@@ -81,6 +81,10 @@
   // Used when smartZoom is OFF and a drill produces nodes that may be off-screen.
   let _panToNodeId = null;
 
+  // When true, doFitToView always fits ALL nodes into the viewport, overriding
+  // smart zoom, suppress, and pan-only flags. Toggled by the fit-to-view button.
+  let _fitToScreenLocked = false;
+
   // HTML column headers (driven from D3 layout, updated each render)
   let colHeaders = []; // [{ dimName, dataX }]
 
@@ -811,8 +815,14 @@
 
   function doFitToView(rootData, cfg, { skipMinScale = false } = {}) {
     if (!mainGroup || !svgEl || !rootData) return;
-    if (_suppressNextFit) { _suppressNextFit = false; _lastDrilledNodeId = null; _panToNodeId = null; return; }
-    if (_panToNodeId) { const id = _panToNodeId; _panToNodeId = null; doPanOnly(rootData, cfg, id); return; }
+    if (_fitToScreenLocked) {
+      // Lock mode: always fit all nodes, clear any pending flags
+      _suppressNextFit = false; _lastDrilledNodeId = null; _panToNodeId = null; _smartZoomToDeepest = false;
+      skipMinScale = true;
+    } else {
+      if (_suppressNextFit) { _suppressNextFit = false; _lastDrilledNodeId = null; _panToNodeId = null; return; }
+      if (_panToNodeId) { const id = _panToNodeId; _panToNodeId = null; doPanOnly(rootData, cfg, id); return; }
+    }
     const isLR = cfg.orientation === 'LR';
     const nw = cfg.nodeWidth;
     const nh = _lastNodeH;
@@ -832,16 +842,25 @@
 
     // Smart zoom: when a drill just happened, restrict the bounding box to the
     // drilled parent + its new children so the new level is framed in the viewport.
+    // Skipped when fit-to-screen is locked — always fit all nodes.
     let focusNodes = allNodes;
     let usedSmartZoom = false;
-    if (cfg.smartZoom && _lastDrilledNodeId) {
+    if (!_fitToScreenLocked && cfg.smartZoom && _lastDrilledNodeId) {
       const drilled = allNodes.find(n => n.data.id === _lastDrilledNodeId);
       if (drilled?.children?.length) {
-        focusNodes = [drilled, ...drilled.children];
+        if (isLR) {
+          // LR: include ancestors so the full path from root to new children is visible
+          const focus = [...drilled.children, drilled];
+          let ancestor = drilled.parent;
+          while (ancestor) { focus.push(ancestor); ancestor = ancestor.parent; }
+          focusNodes = focus;
+        } else {
+          focusNodes = [drilled, ...drilled.children];
+        }
         usedSmartZoom = true;
       }
       _lastDrilledNodeId = null; // consume regardless — avoids stale state
-    } else if (_smartZoomToDeepest) {
+    } else if (!_fitToScreenLocked && _smartZoomToDeepest) {
       // maxChildren +/- with smart zoom: find the deepest expanded node in the
       // live post-update hierarchy (avoids pre/post-update ID mismatch).
       _smartZoomToDeepest = false;
@@ -856,17 +875,25 @@
       }
       const deepest = findDeepestHier(hier);
       if (deepest?.node?.children?.length) {
-        focusNodes = [deepest.node, ...deepest.node.children];
+        if (isLR) {
+          const focus = [...deepest.node.children, deepest.node];
+          let ancestor = deepest.node.parent;
+          while (ancestor) { focus.push(ancestor); ancestor = ancestor.parent; }
+          focusNodes = focus;
+        } else {
+          focusNodes = [deepest.node, ...deepest.node.children];
+        }
         usedSmartZoom = true;
       }
     }
 
     const xs = focusNodes.map(n => isLR ? n.y : n.x);
     const ys = focusNodes.map(n => isLR ? n.x : n.y);
-    const x0 = Math.min(...xs) - nw / 2 - 50;
-    const y0 = Math.min(...ys) - nh / 2 - 50;
-    const x1 = Math.max(...xs) + nw / 2 + 50;
-    const y1 = Math.max(...ys) + nh / 2 + 50;
+    const pad = usedSmartZoom ? 100 : 50;
+    const x0 = Math.min(...xs) - nw / 2 - pad;
+    const y0 = Math.min(...ys) - nh / 2 - pad;
+    const x1 = Math.max(...xs) + nw / 2 + pad;
+    const y1 = Math.max(...ys) + nh / 2 + pad;
     const tw = x1 - x0;
     const th = y1 - y0;
 
@@ -876,8 +903,8 @@
     // (position: absolute; right: 16px; ~38px wide = 54px total inset).
     const ZOOM_PANEL_RIGHT = 54;
     const wAvail = w - ZOOM_PANEL_RIGHT;
-    // Cap at 1.2 for focused drills to prevent over-zooming on a small set of nodes
-    const maxScale = usedSmartZoom ? 1.2 : 0.92;
+    // Cap scale for focused drills to prevent over-zooming on a small set of nodes
+    const maxScale = usedSmartZoom ? 0.95 : 0.92;
     // Dynamic minimum: stop zooming out once the viewport shows ~8 children (LR) or
     // ~9 children (TB) in the sibling direction — beyond that, scrollbars take over.
     const siblingSlot = isLR
@@ -895,16 +922,16 @@
     // top-left so the root node is always visible; scrollbars handle the overflow.
     const scaleClamped = !skipMinScale && naturalScale < MIN_READABLE_SCALE;
 
-    // Smart zoom always centers the focused region; full fit respects alignment setting
+    // Smart zoom centers the focused region; full fit anchors top-left for both alignments
     let tx, ty;
     if (usedSmartZoom) {
-      tx = (w - tw * scale) / 2 - x0 * scale;
+      tx = 40 - x0 * scale;
       ty = (h - th * scale) / 2 - y0 * scale;
     } else if (scaleClamped || (cfg.initialAlignment === 'top-left' && isLR)) {
       tx = 40 - x0 * scale;
       ty = 40 - y0 * scale;
     } else {
-      tx = (w - tw * scale) / 2 - x0 * scale;
+      tx = 40 - x0 * scale;
       ty = (h - th * scale) / 2 - y0 * scale;
     }
 
@@ -1117,7 +1144,14 @@
     d3.select(svgEl).transition().duration(250).call(zoomBehavior.scaleBy, 1 / 1.5);
   }
 
-  function fitView() {
+  async function fitView() {
+    _fitToScreenLocked = !_fitToScreenLocked;
+    if (_fitToScreenLocked && get(config).smartZoom) {
+      // Mutually exclusive — turn off smart zoom
+      const current = get(config);
+      _suppressNextFit = true; // suppress the fit triggered by config change
+      await saveConfig({ ...current, smartZoom: false });
+    }
     const root = get(treeRoot);
     const cfg  = get(config);
     if (root) doFitToView(root, cfg, { skipMinScale: true });
@@ -1172,8 +1206,10 @@
   async function toggleSmartZoom() {
     const current = get(config);
     _suppressNextFit = true; // suppress the fit triggered by the config change
-    await saveConfig({ ...current, smartZoom: !current.smartZoom });
-    if (!current.smartZoom) {
+    const turningOn = !current.smartZoom;
+    if (turningOn) _fitToScreenLocked = false; // mutually exclusive with fit-to-screen
+    await saveConfig({ ...current, smartZoom: turningOn });
+    if (turningOn) {
       // Was OFF, now ON — zoom to current drill level
       focusCurrentDrill();
     }
@@ -1574,7 +1610,7 @@
                 <path d="M1 4V1h3M10 1h3v3M13 10v3h-3M4 13H1v-3" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
               </svg>
             </span>
-            <strong>Fit to view</strong> — reset zoom to show all nodes
+            <strong>Fit to screen</strong> — toggle to keep all nodes visible as the tree grows
           </li>
           <li>
             <span class="help-chip">
@@ -1621,7 +1657,14 @@
         <path d="M10 10l2.5 2.5" stroke="currentColor" stroke-width="1.4" stroke-linecap="round"/>
       </svg>
     </button>
-    <button class="zoom-btn zoom-btn-fit" on:click={fitView} title="Fit to view" aria-label="Fit to view">
+    <button
+      class="zoom-btn zoom-btn-fit"
+      class:fit-locked={_fitToScreenLocked}
+      on:click={fitView}
+      title={_fitToScreenLocked ? 'Fit to screen: locked — click to unlock' : 'Fit to screen — click to lock'}
+      aria-label="Toggle fit to screen"
+      aria-pressed={_fitToScreenLocked}
+    >
       <svg width="14" height="14" viewBox="0 0 14 14" fill="none">
         <path d="M1 4V1h3M10 1h3v3M13 10v3h-3M4 13H1v-3" stroke="currentColor" stroke-width="1.4" stroke-linecap="round" stroke-linejoin="round"/>
       </svg>
@@ -1780,6 +1823,11 @@
     border-top: 1px solid var(--color-border-subtle, #f1f5f9);
     border-bottom: 1px solid var(--color-border-subtle, #f1f5f9);
     border-radius: 0;
+  }
+
+  .zoom-btn-fit.fit-locked {
+    color: var(--color-accent, #4a6cf7);
+    background: var(--color-accent-subtle, #eff3ff);
   }
 
   .zoom-btn-smart {
